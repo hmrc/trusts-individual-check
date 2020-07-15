@@ -1,6 +1,7 @@
 import uk.gov.hmrc.DefaultBuildSettings.integrationTestSettings
 import uk.gov.hmrc.SbtArtifactory
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
+import sbt.Keys.useSuperShell
 
 val appName = "trusts-individual-check"
 
@@ -21,6 +22,7 @@ lazy val microservice = Project(appName, file("."))
     )
     // ***************
   )
+  .settings(useSuperShell in ThisBuild := false)
   .settings(publishingSettings: _*)
   .configs(IntegrationTest)
   .settings(integrationTestSettings(): _*)
