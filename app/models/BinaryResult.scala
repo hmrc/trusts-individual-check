@@ -16,10 +16,6 @@
 
 package models
 
-import play.api.libs.json._
-
-case class IndividualCheckCount(_id: String, attempts: Long)
-
-object IndividualCheckCount {
-  implicit val format = Json.format[IndividualCheckCount]
-}
+sealed trait BinaryResult
+case object OperationSucceeded extends BinaryResult
+case object OperationFailed extends BinaryResult

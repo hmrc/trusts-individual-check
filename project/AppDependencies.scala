@@ -19,7 +19,8 @@ object AppDependencies {
     "com.vladsch.flexmark"    %  "flexmark-all"             % "0.35.10",
     "org.scalatestplus.play"  %% "scalatestplus-play"       % "4.0.3",
     "org.mockito"             %  "mockito-all"              % "1.10.19",
-    "org.scalacheck"          %% "scalacheck"               % "1.14.1"
+    "org.scalacheck"          %% "scalacheck"               % "1.14.1",
+    "com.github.tomakehurst"  %  "wiremock-standalone"      % "2.27.1"
   ).map(_ % "test,it")
 
   def apply(): Seq[ModuleID] = compile ++ test

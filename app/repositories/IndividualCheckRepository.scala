@@ -17,10 +17,9 @@
 package repositories
 
 import javax.inject.Inject
-import models.IndividualCheckCount
-import play.api.libs.json.{Json}
+import models.{BinaryResult, IndividualCheckCount, OperationSucceeded}
+import play.api.libs.json.{JsObject, Json}
 import play.modules.reactivemongo.ReactiveMongoApi
-import reactivemongo.api.commands.LastError
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import reactivemongo.play.json.collection.JSONCollection
 
@@ -28,35 +27,30 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi)(implicit ec: ExecutionContext) {
 
-  private val documentExistsErrorCodeValue = 11000
-  private lazy val documentExistsErrorCode = Some(documentExistsErrorCodeValue)
+  val collectionName     : String = "individual-check-counters"
 
-  private def collection: Future[JSONCollection] =
-    mongo.database.map(_.collection[JSONCollection](IndividualCheckRepository.collectionName))
+  private def collection : Future[JSONCollection] = mongo.database.map(
+    _.collection[JSONCollection](collectionName)
+  )
 
-  def fetch(credId: String): Future[IndividualCheckCount] = {
+  def getCounter(credId: String): Future[Long] = {
+    val selector = Json.obj("_id" -> Json.toJson(credId))
+
     collection.flatMap {
-      _.find(Json.obj("_id" -> Json.toJson(credId)))
+      _.find[JsObject, JsObject](selector)
         .one[IndividualCheckCount]
-        .map(_.getOrElse(0))
+        .map(_.map(_.attempts).getOrElse(0))
     }
   }
 
-  def insert(checkCount: IndividualCheckCount): Future[Boolean] = {
+  def setCounter(credId: String, attempts: Long): Future[BinaryResult] = {
 
-    val checkCountWithId = Json.toJsObject(checkCount) ++ Json.obj("_id" -> checkCount.credId)
+    val selector = Json.obj("_id" -> Json.toJson(credId))
+    val modifier = Json.obj("$set" -> Json.obj("attempts" -> attempts))
 
     collection.flatMap {
-      _.insert(ordered = false)
-        .one(checkCountWithId)
-        .map(_ => true)
-    } recover {
-      case e: LastError if e.code == documentExistsErrorCode =>
-        false
+      _.findAndUpdate[JsObject, JsObject](selector, modifier, upsert = true)
+        .map(_ => OperationSucceeded)
     }
   }
-}
-
-object IndividualCheckRepository {
-  val collectionName = "individual-check-count"
 }
