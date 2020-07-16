@@ -33,8 +33,8 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi)(implicit ec: 
     _.collection[JSONCollection](collectionName)
   )
 
-  def getCounter(credId: String): Future[Long] = {
-    val selector = Json.obj("_id" -> Json.toJson(credId))
+  def getCounter(id: String): Future[Long] = {
+    val selector = Json.obj("_id" -> Json.toJson(id))
 
     collection.flatMap {
       _.find[JsObject, JsObject](selector)
@@ -43,9 +43,9 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi)(implicit ec: 
     }
   }
 
-  def setCounter(credId: String, attempts: Long): Future[BinaryResult] = {
+  def setCounter(id: String, attempts: Long): Future[BinaryResult] = {
 
-    val selector = Json.obj("_id" -> Json.toJson(credId))
+    val selector = Json.obj("_id" -> Json.toJson(id))
     val modifier = Json.obj("$set" -> Json.obj("attempts" -> attempts))
 
     collection.flatMap {

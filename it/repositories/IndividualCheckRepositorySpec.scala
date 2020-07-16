@@ -25,8 +25,8 @@ class IndividualCheckRepositorySpec
     "must give the value for the chosen id, or 0 if a record does not exist" in {
 
       val existingRecords = List(
-        IndividualCheckCount("CredId1", 1),
-        IndividualCheckCount("CredId2", 2)
+        IndividualCheckCount("id1", 1),
+        IndividualCheckCount("id2", 2)
       )
 
       database.flatMap(_.drop()).futureValue
@@ -43,20 +43,20 @@ class IndividualCheckRepositorySpec
 
         val repo = app.injector.instanceOf[IndividualCheckRepository]
 
-        repo.getCounter("CredId1").futureValue mustEqual 1L
-        repo.getCounter("CredId2").futureValue mustEqual 2L
-        repo.getCounter("CredId3").futureValue mustEqual 0L
+        repo.getCounter("id1").futureValue mustEqual 1L
+        repo.getCounter("id2").futureValue mustEqual 2L
+        repo.getCounter("id3").futureValue mustEqual 0L
       }
     }
   }
 
   "setCounter" - {
 
-    "must set the value for a credId, and create a record if one does not exist for that id" in {
+    "must set the value for an id, and create a record if one does not exist for that id" in {
 
       val existingRecords = List(
-        IndividualCheckCount("CredId1", 1),
-        IndividualCheckCount("CredId2", 2)
+        IndividualCheckCount("id1", 1),
+        IndividualCheckCount("id2", 2)
       )
 
       database.flatMap(_.drop()).futureValue
@@ -73,13 +73,13 @@ class IndividualCheckRepositorySpec
 
         val repo = app.injector.instanceOf[IndividualCheckRepository]
 
-        repo.setCounter("CredId1", 2L).futureValue
-        repo.setCounter("CredId2", 3L).futureValue
-        repo.setCounter("CredId3", 1L).futureValue
+        repo.setCounter("id1", 2L).futureValue
+        repo.setCounter("id2", 3L).futureValue
+        repo.setCounter("id3", 1L).futureValue
 
-        repo.getCounter("CredId1").futureValue mustEqual 2L
-        repo.getCounter("CredId2").futureValue mustEqual 3L
-        repo.getCounter("CredId3").futureValue mustEqual 1L
+        repo.getCounter("id1").futureValue mustEqual 2L
+        repo.getCounter("id2").futureValue mustEqual 3L
+        repo.getCounter("id3").futureValue mustEqual 1L
       }
     }
   }
