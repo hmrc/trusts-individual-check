@@ -43,9 +43,9 @@ class IndividualCheckRepositorySpec
 
         val repo = app.injector.instanceOf[IndividualCheckRepository]
 
-        repo.getCounter("id1").futureValue mustEqual 1L
-        repo.getCounter("id2").futureValue mustEqual 2L
-        repo.getCounter("id3").futureValue mustEqual 0L
+        repo.getCounter("id1").futureValue mustEqual 1
+        repo.getCounter("id2").futureValue mustEqual 2
+        repo.getCounter("id3").futureValue mustEqual 0
       }
     }
   }
@@ -73,13 +73,13 @@ class IndividualCheckRepositorySpec
 
         val repo = app.injector.instanceOf[IndividualCheckRepository]
 
-        repo.setCounter("id1", 2L).futureValue
-        repo.setCounter("id2", 3L).futureValue
-        repo.setCounter("id3", 1L).futureValue
+        repo.setCounter("id1", 2).futureValue
+        repo.setCounter("id2", 3).futureValue
+        repo.setCounter("id3", 1).futureValue
 
-        repo.getCounter("id1").futureValue mustEqual 2L
-        repo.getCounter("id2").futureValue mustEqual 3L
-        repo.getCounter("id3").futureValue mustEqual 1L
+        repo.getCounter("id1").futureValue mustEqual 2
+        repo.getCounter("id2").futureValue mustEqual 3
+        repo.getCounter("id3").futureValue mustEqual 1
       }
     }
   }
