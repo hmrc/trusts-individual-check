@@ -24,10 +24,10 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import scala.concurrent.Future
 
 @Singleton()
-class MicroserviceHelloWorldController @Inject()(appConfig: AppConfig, cc: ControllerComponents)
+class IndividualCheckController @Inject()(appConfig: AppConfig, cc: ControllerComponents)
     extends BackendController(cc) {
 
-  def hello(): Action[AnyContent] = Action.async { implicit request =>
-    Future.successful(Ok("Hello world"))
+  def individualCheck(): Action[AnyContent] = Action.async { implicit request =>
+    throw new NotImplementedError("Not yet implemented")
   }
 }
