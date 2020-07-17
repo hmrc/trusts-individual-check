@@ -1,6 +1,4 @@
 import play.core.PlayVersion.current
-import play.sbt.PlayImport._
-import sbt.Keys.libraryDependencies
 import sbt._
 
 object AppDependencies {
@@ -9,7 +7,10 @@ object AppDependencies {
     play.sbt.PlayImport.ws,
     "uk.gov.hmrc"             %% "bootstrap-backend-play-27"        % "2.23.0",
     "org.reactivemongo"       %% "play2-reactivemongo"              % "0.20.9-play27",
-    "uk.gov.hmrc"             %% "domain"                           % "5.9.0-play-27"
+    "uk.gov.hmrc"             %% "domain"                           % "5.9.0-play-27",
+    "com.amazonaws"           % "aws-java-sdk-s3"                   % "1.11.820",
+    "com.enragedginger"       %% "akka-quartz-scheduler"            % "1.8.4-akka-2.6.x",
+    "uk.gov.hmrc"             %% "mongo-lock"                       % "6.23.0-play-26"
   )
 
   val test = Seq(
@@ -25,8 +26,8 @@ object AppDependencies {
 
   def apply(): Seq[ModuleID] = compile ++ test
 
-  val akkaVersion = "2.5.23"
-  val akkaHttpVersion = "10.0.15"
+  val akkaVersion = "2.6.7"
+  val akkaHttpVersion = "10.1.12"
 
   val overrides = Seq(
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,

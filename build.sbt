@@ -12,7 +12,6 @@ val silencerVersion = "1.7.0"
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
   .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
-  .settings(inConfig(IntegrationTest)(itSettings): _*)
   .settings(
     majorVersion                     := 0,
     scalaVersion                     := "2.12.11",
@@ -28,10 +27,11 @@ lazy val microservice = Project(appName, file("."))
   )
   .settings(useSuperShell in ThisBuild := false)
   .settings(publishingSettings: _*)
+  .settings(inConfig(IntegrationTest)(itSettings): _*)
   .configs(IntegrationTest)
   .settings(resolvers += Resolver.jcenterRepo)
   .settings(
-    PlayKeys.playDefaultPort := 9705,
+    PlayKeys.playDefaultPort := 9847,
     RoutesKeys.routesImport += "models._",
     ScoverageKeys.coverageExcludedPackages := "<empty>;scheduler.jobs.*;",
     ScoverageKeys.coverageExcludedFiles := "<empty>;Reverse.*;..*components.*;" +
