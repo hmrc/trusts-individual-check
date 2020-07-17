@@ -58,4 +58,3 @@ lazy val itSettings = Defaults.itSettings ++ Seq(
 )
 
 dependencyOverrides ++= AppDependencies.overrides
-
