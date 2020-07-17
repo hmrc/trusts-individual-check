@@ -26,7 +26,7 @@ import play.api.test.{FakeRequest, Helpers}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-class MicroserviceHelloWorldControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite {
+class IndividualCheckControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite {
 
   private val fakeRequest = FakeRequest("GET", "/")
 
@@ -36,12 +36,13 @@ class MicroserviceHelloWorldControllerSpec extends AnyWordSpec with Matchers wit
   private val serviceConfig = new ServicesConfig(configuration)
   private val appConfig     = new AppConfig(configuration, serviceConfig)
 
-  private val controller = new MicroserviceHelloWorldController(appConfig, Helpers.stubControllerComponents())
+  private val controller = new IndividualCheckController(appConfig, Helpers.stubControllerComponents())
 
-  "GET /" should {
-    "return 200" in {
-      val result = controller.hello()(fakeRequest)
-      status(result) shouldBe Status.OK
+  "individualCheck /" should {
+    "return runtime exception" in {
+      assertThrows[RuntimeException] {
+        controller.individualCheck()(fakeRequest)
+      }
     }
   }
 }
