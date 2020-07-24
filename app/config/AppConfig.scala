@@ -27,4 +27,10 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
 
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
   val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
+
+  val idMatchHost: String = config.get[String]("url.individual-match.host")
+  val idMatchEndpoint:String = config.get[String]("url.individual-match.post")
+
+  val maxIdAttempts: Int = config.get[Int]("individual-match.max-attempts")
+
 }
