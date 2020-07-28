@@ -1,13 +1,14 @@
 package repositories
 
 import models.IndividualCheckCount
+import org.scalatest.OptionValues
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.{MustMatchers, OptionValues}
 import play.api.inject.guice.GuiceApplicationBuilder
 import reactivemongo.play.json.collection.JSONCollection
 import play.api.test.Helpers.running
 import suite.MongoSuite
+import org.scalatest.matchers.must.{Matchers => MustMatchers}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

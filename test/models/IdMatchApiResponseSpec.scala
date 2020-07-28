@@ -26,24 +26,22 @@ class IdMatchApiResponseSpec extends AnyWordSpec  with MustMatchers{
 
   private val exampleSuccessJson:String = "{\"individualMatch\":true}"
 
-  private val exampleSuccess:IdMatchApiResponse = IdMatchApiResponse(individualMatch = Option(true))
+  private val exampleSuccess:IdMatchApiResponseSuccess = IdMatchApiResponseSuccess(individualMatch = true)
 
   private val exampleErrorJson:String = "{\"failures\":[{\"code\":\"RESOURCE_NOT_FOUND\",\"reason\":\"The remote endpoint has indicated that no data can be found.\"}]}"
 
-  private val exampleErrorObj:IdMatchApiResponse = IdMatchApiResponse(
-    individualMatch = None,
-    failures = Option(Seq(ErrorResponseDetail(
+  private val exampleErrorObj:IdMatchApiResponseFailure = IdMatchApiResponseFailure(
+    failures = Seq(ErrorResponseDetail(
       code = "RESOURCE_NOT_FOUND",
-      reason = "The remote endpoint has indicated that no data can be found."))))
+      reason = "The remote endpoint has indicated that no data can be found.")))
 
 
   "successful Response" should {
 
     "read correctly" in {
       val json = Json.parse(exampleSuccessJson)
-      val obj = Json.fromJson[IdMatchApiResponse](json).get
+      val obj = Json.fromJson[IdMatchApiResponseSuccess](json).get
       obj.mustBe(exampleSuccess)
-      obj.isSuccess.mustBe(true)
     }
 
     "write correctly" in {
@@ -56,9 +54,8 @@ class IdMatchApiResponseSpec extends AnyWordSpec  with MustMatchers{
 
     "read correctly" in {
       val json = Json.parse(exampleErrorJson)
-      val obj = Json.fromJson[IdMatchApiResponse](json).get
+      val obj = Json.fromJson[IdMatchApiResponseSuccess](json).get
       obj.mustBe(exampleErrorObj)
-      obj.isSuccess.mustBe(false)
     }
 
     "write correctly" in {

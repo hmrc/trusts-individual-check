@@ -27,7 +27,7 @@ import play.api.test.{FakeRequest, Helpers}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-class IdMatchApiRequestSpec extends AnyWordSpec  with MustMatchers{
+class IdMatchApiRequestSpec extends AnyWordSpec with MustMatchers{
 
   private val exampleJson:String = "{\"nino\":\"AB123456A\",\"surname\":\"Bloggs\",\"forename\":\"Joe\",\"birthDate\":\"2000-02-29\"}"
 

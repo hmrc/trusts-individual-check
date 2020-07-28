@@ -17,19 +17,43 @@
 package connectors
 
 import config.AppConfig
+import exceptions.{InvalidIdMatchRequest, InvalidIdMatchResponse}
 import javax.inject.Inject
-import models.{IdMatchApiRequest, IdMatchApiResponse}
+import models.{ErrorResponseDetail, IdMatchApiRequest, IdMatchApiResponseFailure, IdMatchApiResponseSuccess}
+import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppConfig)
                                       (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext){
 
   private val postUrl = s"${appConfig.idMatchHost}/${appConfig.idMatchEndpoint}"
 
-  def matchId(nino: String, surname: String, forename: String, birthDate: String): Future[IdMatchApiResponse] = {
-    val request = IdMatchApiRequest(nino = nino, surname = surname, forename = forename, birthDate = birthDate)
-    http.POST[IdMatchApiRequest, IdMatchApiResponse](postUrl, request)
+  def matchId(nino: String, surname: String, forename: String, birthDate: String): Future[Either[IdMatchApiResponseFailure, IdMatchApiResponseSuccess]] = {
+    val request = IdMatchApiRequest(nino, surname, forename, birthDate)
+    val validatedRequest = Json.toJson(request).validate[IdMatchApiRequest]
+
+    Try {
+        if(validatedRequest.isError) {
+          throw new InvalidIdMatchRequest("Could not validate the request")
+        } else {
+          for {
+            response <- http.POST[IdMatchApiRequest, JsValue](postUrl, validatedRequest.get)
+          } yield {
+            val success = response.validate(IdMatchApiResponseSuccess.format).asOpt
+            val failure = response.validate(IdMatchApiResponseFailure.format).asOpt
+            (success, failure) match {
+              case (Some(s), None) => Right(s)
+              case (None, Some(f)) => Left(f)
+              case _ => throw new InvalidIdMatchResponse("Could not validate the response")
+            }
+          }
+        }
+    } match {
+      case Success(value) => value
+      case Failure(exception) => Future.failed(exception)
+    }
   }
 }
