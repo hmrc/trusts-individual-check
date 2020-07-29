@@ -18,16 +18,16 @@ package services
 
 import config.AppConfig
 import connectors.IdentityMatchConnector
-import exceptions.{InvalidIdMatchRequest, InvalidIdMatchResponse, LimitException}
-import models.{IdMatchApiResponseFailure, IdMatchApiResponseSuccess, IdMatchRequest, IdMatchResponse, OperationSucceeded}
-import org.mockito.ArgumentCaptor
+import exceptions.LimitException
+import models.{IdMatchApiRequest, IdMatchResponse}
 import org.mockito.ArgumentMatchers.{any, eq => mockEq}
-import org.mockito.Mockito.{times, verify, when, reset}
+import org.mockito.Mockito.{reset, times, verify, when}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.libs.json.{JsString, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.api.{Configuration, Environment}
 import repositories.IndividualCheckRepository
@@ -36,9 +36,13 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Try
 
-class IdentityMatchServiceSpec extends AnyWordSpec with MockitoSugar with Matchers with GuiceOneAppPerSuite with FutureAwaits with DefaultAwaitTimeout{
+class IdentityMatchServiceSpec extends AnyWordSpec  with MockitoSugar
+                                                    with Matchers
+                                                    with GuiceOneAppPerSuite
+                                                    with FutureAwaits
+                                                    with DefaultAwaitTimeout
+                                                    with BeforeAndAfterEach {
 
   private val env           = Environment.simple()
   private val configuration = Configuration.load(env)
@@ -52,102 +56,97 @@ class IdentityMatchServiceSpec extends AnyWordSpec with MockitoSugar with Matche
   private val repository = mock[IndividualCheckRepository]
 
   val identityMatchConnector = new IdentityMatchConnector(httpClient, appConfig)
+
   val identityMatchService = new IdentityMatchService(identityMatchConnector, repository, appConfig)
-
-  private val exampleSuccessJson:String = "{\"individualMatch\":true}"
-  private val exampleErrorJson:String = "{\"failures\":[{\"code\":\"RESOURCE_NOT_FOUND\",\"reason\":\"The remote endpoint has indicated that no data can be found.\"}]}"
-
-  val success:JsValue = Json.parse(exampleSuccessJson)
-  val failure:JsValue = Json.parse(exampleErrorJson)
 
   val idString = "IDSTRING"
 
+  val maxAttemptsIdString = "MAX ATTEMPTS"
+
+  override def beforeEach(): Unit = {
+
+    reset(repository)
+
+    when {
+      repository.getCounter(idString)
+    } thenReturn (Future.successful(0))
+
+    when {
+      repository.getCounter(maxAttemptsIdString)
+    } thenReturn (Future.successful(3))
+  }
+
   "Identity Match Connector" should {
+
+    val matchSuccess:JsValue = Json.parse("""{"individualMatch":true}""")
+
+    val matchFailure:JsValue = Json.parse("""{"individualMatch":false}""")
+
+    val matchError:JsValue = Json.parse("""{"failures":[{
+                                         |"code":"RESOURCE_NOT_FOUND",
+                                         |"reason":"The remote endpoint has indicated that no data can be found."}]}""".stripMargin)
+
+    val successRequest = IdMatchApiRequest("AB123456A", "Name", "Name", "2000-01-01")
+
+    val failureRequest = IdMatchApiRequest("AB123456B", "Name", "Name", "2000-01-01")
+
+    val errorRequest = IdMatchApiRequest("AB123456C", "Name", "Name", "2000-01-01")
+
+    when {
+      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(successRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(matchSuccess)
+
+    when {
+      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(failureRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(matchFailure)
+
+    when {
+      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(errorRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(matchError)
 
     "parse response correctly" when {
 
       "success is returned" in {
 
-        when {
-          repository.getCounter(any())
-        } thenReturn (Future.successful(0))
+        val result: IdMatchResponse = await(identityMatchService.matchId(
+          idString, successRequest.nino, successRequest.surname, successRequest.forename, successRequest.birthDate))
 
-        when {
-          httpClient.POST[IdMatchRequest, JsValue](any(), any(), any())(any(), any(), any(), any())
-        } thenReturn Future(success)
-
-        val v: IdMatchResponse =
-          await(identityMatchService.matchId(idString, "AB123456A", "Name", "Name", "2000-01-01"))
-
-        v.id mustBe idString
-        v.idMatch mustBe true
+        result.id mustBe idString
+        result.idMatch mustBe true
       }
-
-
     }
 
     "reset the counter on success" in {
 
-        var counter = 0
+      val attempt1: IdMatchResponse = await(identityMatchService.matchId(
+        idString, failureRequest.nino, failureRequest.surname, failureRequest.forename, failureRequest.birthDate))
 
-        val intCapture:ArgumentCaptor[Int] = ArgumentCaptor.forClass(classOf[Int])
+      attempt1.idMatch mustBe false
 
-        when {
-          repository.setCounter(any(), intCapture.capture())
-        } thenReturn {
-          counter += 1
-          Future.successful( {
-          OperationSucceeded
-        })}
+      verify(repository, times(1)).incrementCounter(mockEq(idString))
 
-        when {
-          repository.getCounter(any())
-        } thenReturn (Future.successful(counter))
+      val attempt2: IdMatchResponse = await(identityMatchService.matchId(
+        idString, failureRequest.nino, failureRequest.surname, failureRequest.forename, failureRequest.birthDate))
 
+      attempt2.idMatch mustBe false
 
-        reset(httpClient)
-        reset(repository)
+      verify(repository, times(2)).incrementCounter(mockEq(idString))
 
-        when {
-          httpClient.POST[IdMatchRequest, JsValue](any(), any(), any())(any(), any(), any(), any())
-        } thenReturn Future(failure)
+      val attempt3: IdMatchResponse = await(identityMatchService.matchId(
+        idString, successRequest.nino, successRequest.surname, successRequest.forename, successRequest.birthDate))
 
-        Try {
-          val attempt1: IdMatchResponse =
-            await(identityMatchService.matchId(idString, "AB123456B", "Name", "Name", "2000-01-01"))
-        }
+      attempt3.idMatch mustBe true
 
-        Try {
-          val attempt2: IdMatchResponse =
-            await(identityMatchService.matchId(idString, "AB123456B", "Name", "Name", "2000-01-01"))
-        }
-
-        when {
-          httpClient.POST[IdMatchRequest, JsValue](any(), any(), any())(any(), any(), any(), any())
-        } thenReturn Future(success)
-
-        val attempt3: IdMatchResponse =
-          await(identityMatchService.matchId(idString, "AB123456B", "Name", "Name", "2000-01-01"))
-
-        verify(repository, times(1)).setCounter(any(), mockEq(0))
-      }
-
+      verify(repository, times(1)).clearCounter(mockEq(idString))
+    }
 
     "throw exception" when {
 
-      "failure is returned" in {
-
-        when {
-          repository.getCounter(any())
-        } thenReturn (Future.successful(0))
-
-        when {
-          httpClient.POST[IdMatchRequest, JsValue](any(), any(), any())(any(), any(), any(), any())
-        } thenReturn Future(failure)
-
+      "error is returned" in {
 
         val caught = intercept[Exception] {
-          await(identityMatchService.matchId(idString, "AB123456A", "Name", "Name", "2000-01-01"))
+          await(identityMatchService.matchId(
+            idString, errorRequest.nino, errorRequest.surname, errorRequest.forename, errorRequest.birthDate))
         }
 
         caught.getMessage mustBe "Something went wrong"
@@ -155,17 +154,9 @@ class IdentityMatchServiceSpec extends AnyWordSpec with MockitoSugar with Matche
 
       "maximum attempts is reached" in {
 
-        when {
-          repository.getCounter(any())
-        } thenReturn (Future.successful(3))
-
-        when {
-          httpClient.POST[IdMatchRequest, JsValue](any(), any(), any())(any(), any(), any(), any())
-        } thenReturn Future(success)
-
-
         val caught = intercept[LimitException] {
-          await(identityMatchService.matchId(idString, "AB123456A", "Name", "Name", "2000-01-01"))
+          await(identityMatchService.matchId(
+            maxAttemptsIdString, successRequest.nino, successRequest.surname, successRequest.forename, successRequest.birthDate))
         }
 
         caught.getMessage mustBe "Individual check - retry limit reached (3)"

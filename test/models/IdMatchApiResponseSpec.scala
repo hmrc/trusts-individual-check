@@ -54,7 +54,7 @@ class IdMatchApiResponseSpec extends AnyWordSpec  with MustMatchers{
 
     "read correctly" in {
       val json = Json.parse(exampleErrorJson)
-      val obj = Json.fromJson[IdMatchApiResponseSuccess](json).get
+      val obj = Json.fromJson[IdMatchApiResponseFailure](json).get
       obj.mustBe(exampleErrorObj)
     }
 

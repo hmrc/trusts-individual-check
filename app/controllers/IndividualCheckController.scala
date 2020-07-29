@@ -18,16 +18,25 @@ package controllers
 
 import config.AppConfig
 import javax.inject.{Inject, Singleton}
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import models.IdMatchRequest
+import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
+import play.api.mvc.{Action, ControllerComponents}
+import services.IdentityMatchService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
 @Singleton()
-class IndividualCheckController @Inject()(appConfig: AppConfig, cc: ControllerComponents)
+class IndividualCheckController @Inject()(appConfig: AppConfig, service: IdentityMatchService, cc: ControllerComponents)
+                                         (implicit ec: ExecutionContext)
     extends BackendController(cc) {
 
-  def individualCheck(): Action[AnyContent] = Action.async { implicit request =>
-    throw new NotImplementedError("Not yet implemented")
+    def individualCheck(): Action[JsValue] = Action.async(parse.json) { implicit request => {
+
+      request.body.validate[IdMatchRequest] match {
+        case JsSuccess(r, _) => service.matchId(r.id, r.nino, r.surname, r.forename, r.birthDate).map(y => Ok(Json.toJson(y)))
+        case JsError(_) => throw new Exception("")
+      }
+    }
   }
 }

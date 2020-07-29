@@ -16,7 +16,7 @@
 
 package models
 
-import play.api.libs.json.{JsObject, OWrites, Reads, __}
+import play.api.libs.json.{OWrites, Reads, __}
 
 final case class IdMatchApiRequest(nino: String, surname: String, forename: String, birthDate: String)
 
