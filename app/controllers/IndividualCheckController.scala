@@ -21,7 +21,7 @@ import exceptions.InvalidIdMatchRequest
 import javax.inject.{Inject, Singleton}
 import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
-import play.api.mvc.{Action, AnyContent, ControllerComponents, Request, Result}
+import play.api.mvc.{Action, ControllerComponents, Request, Result}
 import services.IdentityMatchService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
