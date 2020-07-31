@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package models
+package models.api1585
 
 import play.api.libs.json.{Format, Json}
 
-final case class IdMatchApiResponseFailure(failures: Seq[ErrorResponseDetail])
+final case class IdMatchApiResponseSuccess(individualMatch: Boolean)
 
-object IdMatchApiResponseFailure {
+object IdMatchApiResponseSuccess {
 
-    implicit lazy val format: Format[IdMatchApiResponseFailure] = Json.format[IdMatchApiResponseFailure]
+  implicit lazy val format: Format[IdMatchApiResponseSuccess] = Json.format[IdMatchApiResponseSuccess]
 }
-
-

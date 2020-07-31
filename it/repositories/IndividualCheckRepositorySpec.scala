@@ -84,4 +84,60 @@ class IndividualCheckRepositorySpec
       }
     }
   }
+
+  "incrementCounter" - {
+
+    "must increase the existing value for an id by one, or set it to one if a value does not exist for that id" in {
+
+      val existingRecords = List(
+        IndividualCheckCount("id1", 1)
+      )
+
+      database.flatMap(_.drop()).futureValue
+
+      database.flatMap {
+        _.collection[JSONCollection]("individual-check-counters")
+          .insert(ordered = false)
+          .many(existingRecords)
+      }.futureValue
+
+      val app = new GuiceApplicationBuilder().build()
+
+      running(app) {
+        val repo = app.injector.instanceOf[IndividualCheckRepository]
+        repo.incrementCounter("id1").futureValue
+        repo.getCounter("id1").futureValue mustEqual 2
+
+
+        repo.incrementCounter("id2").futureValue
+        repo.getCounter("id2").futureValue mustEqual 1
+      }
+    }
+  }
+
+  "clearCounter" - {
+
+    "must remove the record for an id" in {
+
+      val existingRecords = List(
+        IndividualCheckCount("id1", 1)
+      )
+
+      database.flatMap(_.drop()).futureValue
+
+      database.flatMap {
+        _.collection[JSONCollection]("individual-check-counters")
+          .insert(ordered = false)
+          .many(existingRecords)
+      }.futureValue
+
+      val app = new GuiceApplicationBuilder().build()
+
+      running(app) {
+        val repo = app.injector.instanceOf[IndividualCheckRepository]
+        repo.clearCounter("id1").futureValue
+        repo.getCounter("id1").futureValue mustEqual 0
+      }
+    }
+  }
 }

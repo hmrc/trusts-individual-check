@@ -18,23 +18,23 @@ package connectors
 
 import config.AppConfig
 import exceptions.{InvalidIdMatchRequest, InvalidIdMatchResponse}
-import models.{IdMatchApiRequest, IdMatchApiResponseFailure, IdMatchApiResponseSuccess}
+import models.api1585.{IdMatchApiRequest, IdMatchApiResponseError, IdMatchApiResponseSuccess}
 import org.mockito.ArgumentMatchers.{any, eq => mockEq}
 import org.mockito.Mockito.when
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.libs.json.{JsString, JsValue, Json}
+import play.api.libs.json.{JsString, JsValue}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.api.{Configuration, Environment}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import util.IdentityMatchHelper
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class IdentityMatchConnectorSpec extends AnyWordSpec  with MockitoSugar
+class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
                                                       with Matchers
                                                       with GuiceOneAppPerSuite
                                                       with FutureAwaits
@@ -46,59 +46,36 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with MockitoSugar
   private val serviceConfig = new ServicesConfig(configuration)
   private val appConfig     = new AppConfig(configuration, serviceConfig)
 
-  private val httpClient = mock[HttpClient]
   implicit val headerCarrier: HeaderCarrier = mock[HeaderCarrier]
 
   private val identityMatchConnector = new IdentityMatchConnector(httpClient, appConfig)
 
   "Identity Match Connector" should {
 
-    val successRequest = IdMatchApiRequest("AB123456A", "Name", "Name", "2000-01-01")
-
-    val successResponse:JsValue = Json.parse("""{"individualMatch":false}""")
-
-    val failureRequest = IdMatchApiRequest("AB123456B", "Name", "Name", "2000-01-01")
-
-    val failureResponse:JsValue = Json.parse("""{"failures":[{
-                                                 |"code":"RESOURCE_NOT_FOUND",
-                                                 |"reason":"The remote endpoint has indicated that no data can be found."}]}""".stripMargin)
-
-    val invalidRequest = IdMatchApiRequest(nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
-
-    val invalidResponse: JsValue = JsString("")
-
-    when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), any(), any())(any(), any(), any(), any())
-    } thenReturn Future(invalidResponse)
-
-    when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(successRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(successResponse)
-
-    when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(failureRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(failureResponse)
-
     "parse response correctly" when {
 
       "successful response is returned from the API" in {
 
-        val result: Either[IdMatchApiResponseFailure, IdMatchApiResponseSuccess] =
+        val result: Either[IdMatchApiResponseError, IdMatchApiResponseSuccess] =
           await(identityMatchConnector.matchId(successRequest.nino, successRequest.surname, successRequest.forename, successRequest.birthDate))
 
         result.isRight mustBe true
+
         result.isLeft mustBe false
-        result.right.get mustBe successResponse.as[IdMatchApiResponseSuccess]
+
+        result.right.get mustBe matchSuccess.as[IdMatchApiResponseSuccess]
       }
 
       "error response is returned from the API" in {
 
-        val result: Either[IdMatchApiResponseFailure, IdMatchApiResponseSuccess] =
-          await(identityMatchConnector.matchId(failureRequest.nino, failureRequest.surname, failureRequest.forename, failureRequest.birthDate))
+        val result: Either[IdMatchApiResponseError, IdMatchApiResponseSuccess] =
+          await(identityMatchConnector.matchId(errorRequest.nino, errorRequest.surname, errorRequest.forename, errorRequest.birthDate))
 
         result.isLeft mustBe true
+
         result.isRight mustBe false
-        result.left.get mustBe failureResponse.as[IdMatchApiResponseFailure]
+
+        result.left.get mustBe matchError.as[IdMatchApiResponseError]
       }
     }
 
@@ -106,8 +83,11 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with MockitoSugar
 
       "the request fails validation" in {
 
+        val requestWithInvalidNino = IdMatchApiRequest(nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
+
         val caught = intercept[InvalidIdMatchRequest] {
-          await(identityMatchConnector.matchId(invalidRequest.nino, invalidRequest.surname, invalidRequest.forename, invalidRequest.birthDate))
+          await(identityMatchConnector.matchId(
+            requestWithInvalidNino.nino, requestWithInvalidNino.surname, requestWithInvalidNino.forename, requestWithInvalidNino.birthDate))
         }
 
         caught.getMessage mustBe "Could not validate the request"
@@ -115,8 +95,14 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with MockitoSugar
 
       "the response fails validation" in {
 
+        val invalidRequest:IdMatchApiRequest = IdMatchApiRequest("AB123456C", "Name", "Name", "2000-01-01")
+
+        when {
+          httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(invalidRequest), any())(any(), any(), any(), any())
+        } thenReturn Future(JsString(""))
+
         val caught = intercept[InvalidIdMatchResponse] {
-          await(identityMatchConnector.matchId("AB123456C", "Name", "Name", "2000-01-01"))
+          await(identityMatchConnector.matchId(invalidRequest.nino, invalidRequest.surname, invalidRequest.forename, invalidRequest.birthDate))
         }
 
         caught.getMessage mustBe "Could not validate the response"

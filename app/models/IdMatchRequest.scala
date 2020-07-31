@@ -16,13 +16,39 @@
 
 package models
 
-import play.api.libs.json.{Format, Json}
+import models.Validation.{DateReads, ForenameReads, NinoReads, SurnameReads}
+import play.api.libs.json.{OWrites, Reads, __}
 
 final case class IdMatchRequest(id: String, nino: String, surname: String, forename: String, birthDate: String)
 
 object IdMatchRequest {
 
-  implicit val format: Format[IdMatchRequest] = Json.format[IdMatchRequest]
+  implicit lazy val reads: Reads[IdMatchRequest] = {
+
+    import play.api.libs.functional.syntax._
+    import play.api.libs.json._
+
+    (
+      ( __ \ "id").read[String] and
+      ( __ \ "nino").read[String](NinoReads) and
+      (__ \ "surname").read[String](SurnameReads) and
+      (__ \ "forename").read[String](ForenameReads) and
+      (__ \ "birthDate").read[String](DateReads)
+    )(IdMatchRequest.apply _)
+  }
+
+  implicit lazy val writes: OWrites[IdMatchRequest] = {
+
+    import play.api.libs.functional.syntax._
+
+    (
+      ( __ \ "id").write[String] and
+      ( __ \ "nino").write[String] and
+      (__ \ "surname").write[String] and
+      (__ \ "forename").write[String] and
+      (__ \ "birthDate").write[String]
+    )(unlift(IdMatchRequest.unapply))
+  }
 
 }
 

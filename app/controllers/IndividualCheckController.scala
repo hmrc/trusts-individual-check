@@ -17,26 +17,42 @@
 package controllers
 
 import config.AppConfig
+import exceptions.InvalidIdMatchRequest
 import javax.inject.{Inject, Singleton}
-import models.IdMatchRequest
+import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
-import play.api.mvc.{Action, ControllerComponents}
+import play.api.mvc.{Action, AnyContent, ControllerComponents, Request, Result}
 import services.IdentityMatchService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
 class IndividualCheckController @Inject()(appConfig: AppConfig, service: IdentityMatchService, cc: ControllerComponents)
-                                         (implicit ec: ExecutionContext)
-    extends BackendController(cc) {
+                                         (implicit ec: ExecutionContext) extends BackendController(cc) {
 
-    def individualCheck(): Action[JsValue] = Action.async(parse.json) { implicit request => {
+  // TODO: Implement Auth?
 
-      request.body.validate[IdMatchRequest] match {
-        case JsSuccess(r, _) => service.matchId(r.id, r.nino, r.surname, r.forename, r.birthDate).map(y => Ok(Json.toJson(y)))
-        case JsError(_) => throw new Exception("")
+  def individualCheck(): Action[JsValue] = Action.async(parse.json) {
+    implicit request => {
+      Future { validateRequest(request) } flatMap (r => service.matchId(r)) map processResponse recoverWith {
+        case e: InvalidIdMatchRequest => Future.successful(BadRequest(getError(e.getLocalizedMessage)))
       }
     }
+  }
+
+  private def validateRequest(request: Request[JsValue]): IdMatchRequest = {
+    request.body.validate[IdMatchRequest] match {
+      case JsSuccess(idRequest, _) => idRequest
+      case JsError(_) => throw new InvalidIdMatchRequest("Could not validate the request")
+    }
+  }
+
+  private def processResponse(response: Either[IdMatchError, IdMatchResponse]): Result = {
+    Ok(response.fold(e => Json.toJson(e), x => Json.toJson(x)))
+  }
+
+  private def getError(msg: String): JsValue = {
+    Json.toJson(IdMatchError(Seq(msg)))
   }
 }

@@ -17,30 +17,25 @@
 package models
 
 import play.api.libs.json.JsValue
-//import org.scalatest.matchers.should.Matchers
 import org.scalatest.matchers.must.{Matchers => MustMatchers}
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.Json
 
-class IdMatchApiResponseSpec extends AnyWordSpec  with MustMatchers{
+class IdMatchResponseSpec extends AnyWordSpec  with MustMatchers{
 
-  private val exampleSuccessJson:String = "{\"individualMatch\":true}"
+  private val exampleSuccessJson:String = """{"id":"ID","idMatch":true}"""
 
-  private val exampleSuccess:IdMatchApiResponseSuccess = IdMatchApiResponseSuccess(individualMatch = true)
+  private val exampleSuccess:IdMatchResponse = IdMatchResponse(id = "ID", idMatch = true)
 
-  private val exampleErrorJson:String = "{\"failures\":[{\"code\":\"RESOURCE_NOT_FOUND\",\"reason\":\"The remote endpoint has indicated that no data can be found.\"}]}"
-
-  private val exampleErrorObj:IdMatchApiResponseFailure = IdMatchApiResponseFailure(
-    failures = Seq(ErrorResponseDetail(
-      code = "RESOURCE_NOT_FOUND",
-      reason = "The remote endpoint has indicated that no data can be found.")))
+  private val exampleErrorJson:String = """{"errors":["Something went wrong"]}"""
+  private val exampleErrorObj:IdMatchError = IdMatchError(errors = Seq("Something went wrong"))
 
 
   "successful Response" should {
 
     "read correctly" in {
       val json = Json.parse(exampleSuccessJson)
-      val obj = Json.fromJson[IdMatchApiResponseSuccess](json).get
+      val obj = Json.fromJson[IdMatchResponse](json).get
       obj.mustBe(exampleSuccess)
     }
 
@@ -54,7 +49,7 @@ class IdMatchApiResponseSpec extends AnyWordSpec  with MustMatchers{
 
     "read correctly" in {
       val json = Json.parse(exampleErrorJson)
-      val obj = Json.fromJson[IdMatchApiResponseFailure](json).get
+      val obj = Json.fromJson[IdMatchError](json).get
       obj.mustBe(exampleErrorObj)
     }
 

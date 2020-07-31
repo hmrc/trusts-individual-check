@@ -26,6 +26,8 @@ import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
 
+// Tested in integration testing
+// $COVERAGE-OFF$
 class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   val collectionName     : String = "individual-check-counters"

@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-package models
+package models.api1585
 
-import config.AppConfig
-import play.api.libs.json.JsValue
-//import org.scalatest.matchers.should.Matchers
 import org.scalatest.matchers.must.{Matchers => MustMatchers}
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.libs.json.Json
-import play.api.test.{FakeRequest, Helpers}
-import play.api.{Configuration, Environment}
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import play.api.libs.json.{JsValue, Json}
 
 class IdMatchApiRequestSpec extends AnyWordSpec with MustMatchers{
 
-  private val exampleJson:String = "{\"nino\":\"AB123456A\",\"surname\":\"Bloggs\",\"forename\":\"Joe\",\"birthDate\":\"2000-02-29\"}"
+  private val exampleJson:String = """{"nino":"AB123456A","surname":"Bloggs","forename":"Joe","birthDate":"2000-02-29"}"""
 
   private val exampleObj:IdMatchApiRequest = IdMatchApiRequest(
     nino = "AB123456A",

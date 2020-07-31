@@ -19,19 +19,19 @@ package connectors
 import config.AppConfig
 import exceptions.{InvalidIdMatchRequest, InvalidIdMatchResponse}
 import javax.inject.Inject
-import models.{IdMatchApiRequest, IdMatchApiResponseFailure, IdMatchApiResponseSuccess}
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import models.api1585.{IdMatchApiRequest, IdMatchApiResponseError, IdMatchApiResponseSuccess}
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+
 import scala.concurrent.{ExecutionContext, Future}
 
 class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppConfig) {
 
   private val postUrl = s"${appConfig.idMatchHost}/${appConfig.idMatchEndpoint}"
 
-  def matchId(  nino: String,
-                surname: String,
-                forename: String,
-                birthDate: String )(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiResponseFailure, IdMatchApiResponseSuccess]] = {
+  def matchId(  nino: String, surname: String, forename: String, birthDate: String )
+             (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiResponseError, IdMatchApiResponseSuccess]] = {
 
     val request = IdMatchApiRequest(nino, surname, forename, birthDate)
 
@@ -43,7 +43,7 @@ class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppC
       response <- http.POST[IdMatchApiRequest, JsValue](postUrl, request)
     } yield {
       val success = response.validate(IdMatchApiResponseSuccess.format)
-      val failure = response.validate(IdMatchApiResponseFailure.format)
+      val failure = response.validate(IdMatchApiResponseError.format)
       (success, failure) match {
         case (JsSuccess(s, _), JsError(_)) => Right(s)
         case (JsError(_), JsSuccess(f, _)) => Left(f)

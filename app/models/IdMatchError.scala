@@ -16,12 +16,13 @@
 
 package models
 
-
 import play.api.libs.json.{Format, Json}
 
-final case class IdMatchApiResponseSuccess(individualMatch: Boolean)
+final case class IdMatchError(errors: Seq[String])
 
-object IdMatchApiResponseSuccess {
+object IdMatchError {
 
-  implicit lazy val format: Format[IdMatchApiResponseSuccess] = Json.format[IdMatchApiResponseSuccess]
+  implicit val format: Format[IdMatchError] = Json.format[IdMatchError]
+
 }
+
