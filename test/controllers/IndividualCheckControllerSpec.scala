@@ -16,33 +16,96 @@
 
 package controllers
 
-import config.AppConfig
-import org.scalatest.matchers.should.Matchers
+import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
+import play.api.Application
+import play.api.inject.bind
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Json
+import repositories.IndividualCheckRepository
+import uk.gov.hmrc.http.HttpClient
+import util.IdentityMatchHelper
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
+import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.http.Status
 import play.api.test.Helpers._
-import play.api.test.{FakeRequest, Helpers}
-import play.api.{Configuration, Environment}
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
+import services.IdentityMatchService
 
-class IndividualCheckControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite {
+import scala.concurrent.Future
 
-  private val fakeRequest = FakeRequest("GET", "/")
 
-  private val env           = Environment.simple()
-  private val configuration = Configuration.load(env)
+class IndividualCheckControllerSpec extends AnyWordSpec with IdentityMatchHelper with Matchers with GuiceOneAppPerSuite
+  with FutureAwaits
+  with DefaultAwaitTimeout{
 
-  private val serviceConfig = new ServicesConfig(configuration)
-  private val appConfig     = new AppConfig(configuration, serviceConfig)
+  private val service = mock[IdentityMatchService]
 
-  private val controller = new IndividualCheckController(appConfig, Helpers.stubControllerComponents())
+  when(service.matchId(any())(any(), any())).thenReturn(Future.successful(Right(IdMatchResponse("ID", true))))
 
-  "individualCheck /" should {
-    "return runtime exception" in {
-      assertThrows[RuntimeException] {
-        controller.individualCheck()(fakeRequest)
-      }
+  override lazy val app: Application = new GuiceApplicationBuilder()
+    .overrides(bind[IndividualCheckRepository].toInstance(repository))
+    .overrides(bind[HttpClient].toInstance(httpClient)).build()
+
+  "IndividualCheckController" should {
+
+    "return a response to a valid request" in {
+
+      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+        .withJsonBody(Json.toJson(successRequest))
+
+      val result = route(app, request)
+
+      val jsResult = Json.parse(contentAsString(result.get)).validate[IdMatchResponse]
+
+      jsResult.isSuccess mustBe true
+
+      jsResult.get mustBe successResponse
     }
+  }
+
+  "return a response to an invalid request" in {
+
+    val requestWithInvalidNino = IdMatchRequest(id = idString, nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
+
+    val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+      .withJsonBody(Json.toJson(requestWithInvalidNino))
+
+    val result = route(app, request)
+
+    val jsResult = Json.parse(contentAsString(result.get)).validate[IdMatchError]
+
+    jsResult.isSuccess mustBe true
+
+    jsResult.get.errors.contains("Could not validate the request") mustBe true
+  }
+
+  "return a generic response if API sends an error" in {
+
+    val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+      .withJsonBody(Json.toJson(errorRequest))
+
+    val result = route(app, request)
+
+    val jsResult = Json.parse(contentAsString(result.get)).validate[IdMatchError]
+
+    jsResult.isSuccess mustBe true
+
+    jsResult.get.errors.contains("Something went wrong") mustBe true
+  }
+
+  "return a specific response if API limit is reached" in {
+
+    val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+      .withJsonBody(Json.toJson(maxAttemptsRequest))
+
+    val result = route(app, request)
+
+    val jsResult = Json.parse(contentAsString(result.get)).validate[IdMatchError]
+
+    jsResult.isSuccess mustBe true
+
+    jsResult.get.errors.contains("Individual check - retry limit reached (3)") mustBe true
   }
 }

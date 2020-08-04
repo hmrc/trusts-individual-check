@@ -1,13 +1,14 @@
 package repositories
 
 import models.IndividualCheckCount
+import org.scalatest.OptionValues
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.{MustMatchers, OptionValues}
 import play.api.inject.guice.GuiceApplicationBuilder
 import reactivemongo.play.json.collection.JSONCollection
 import play.api.test.Helpers.running
 import suite.MongoSuite
+import org.scalatest.matchers.must.{Matchers => MustMatchers}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -80,6 +81,62 @@ class IndividualCheckRepositorySpec
         repo.getCounter("id1").futureValue mustEqual 2
         repo.getCounter("id2").futureValue mustEqual 3
         repo.getCounter("id3").futureValue mustEqual 1
+      }
+    }
+  }
+
+  "incrementCounter" - {
+
+    "must increase the existing value for an id by one, or set it to one if a value does not exist for that id" in {
+
+      val existingRecords = List(
+        IndividualCheckCount("id1", 1)
+      )
+
+      database.flatMap(_.drop()).futureValue
+
+      database.flatMap {
+        _.collection[JSONCollection]("individual-check-counters")
+          .insert(ordered = false)
+          .many(existingRecords)
+      }.futureValue
+
+      val app = new GuiceApplicationBuilder().build()
+
+      running(app) {
+        val repo = app.injector.instanceOf[IndividualCheckRepository]
+        repo.incrementCounter("id1").futureValue
+        repo.getCounter("id1").futureValue mustEqual 2
+
+
+        repo.incrementCounter("id2").futureValue
+        repo.getCounter("id2").futureValue mustEqual 1
+      }
+    }
+  }
+
+  "clearCounter" - {
+
+    "must remove the record for an id" in {
+
+      val existingRecords = List(
+        IndividualCheckCount("id1", 1)
+      )
+
+      database.flatMap(_.drop()).futureValue
+
+      database.flatMap {
+        _.collection[JSONCollection]("individual-check-counters")
+          .insert(ordered = false)
+          .many(existingRecords)
+      }.futureValue
+
+      val app = new GuiceApplicationBuilder().build()
+
+      running(app) {
+        val repo = app.injector.instanceOf[IndividualCheckRepository]
+        repo.clearCounter("id1").futureValue
+        repo.getCounter("id1").futureValue mustEqual 0
       }
     }
   }

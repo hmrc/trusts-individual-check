@@ -16,6 +16,7 @@
 
 package repositories
 
+import config.AppConfig
 import javax.inject.Inject
 import models.{BinaryResult, IndividualCheckCount, OperationSucceeded}
 import play.api.libs.json.{JsObject, Json}
@@ -25,7 +26,9 @@ import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi)(implicit ec: ExecutionContext) {
+// Tested in integration testing
+// $COVERAGE-OFF$
+class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   val collectionName     : String = "individual-check-counters"
 
@@ -41,6 +44,17 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi)(implicit ec: 
         .one[IndividualCheckCount]
         .map(_.map(_.attempts).getOrElse(0))
     }
+  }
+
+  def clearCounter(id: String): Future[BinaryResult] = {
+    val selector = Json.obj("_id" -> Json.toJson(id))
+    collection.flatMap {
+      _.findAndRemove(selector).map(_ => OperationSucceeded)
+    }
+  }
+
+  def incrementCounter(id: String): Future[BinaryResult] = {
+    getCounter(id).flatMap(counter => setCounter(id, counter + 1))
   }
 
   def setCounter(id: String, attempts: Int): Future[BinaryResult] = {
