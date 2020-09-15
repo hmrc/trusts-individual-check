@@ -31,7 +31,7 @@ import uk.gov.hmrc.play.HeaderCarrierConverter
 import scala.concurrent.{ExecutionContext, Future}
 
 class AuthenticatedIdentifierAction @Inject()(override val authConnector: AuthConnector,
-                                              val parser: BodyParser[AnyContent])
+                                              val parser: BodyParsers.Default)
                                              (implicit val executionContext: ExecutionContext) extends IdentifierAction with AuthorisedFunctions {
 
   private val logger = Logger("IdentifierAction")

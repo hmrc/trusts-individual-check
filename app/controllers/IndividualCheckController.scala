@@ -16,7 +16,7 @@
 
 package controllers
 
-import config.AppConfig
+import controllers.actions.IdentifierAction
 import exceptions.InvalidIdMatchRequest
 import javax.inject.{Inject, Singleton}
 import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
@@ -28,12 +28,12 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
-class IndividualCheckController @Inject()(appConfig: AppConfig, service: IdentityMatchService, cc: ControllerComponents)
-                                         (implicit ec: ExecutionContext) extends BackendController(cc) {
+class IndividualCheckController @Inject()(service: IdentityMatchService,
+                                          cc: ControllerComponents,
+                                          identify: IdentifierAction
+                                         )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
-  // TODO: Implement Auth?
-
-  def individualCheck(): Action[JsValue] = Action.async(parse.json) {
+  def individualCheck(): Action[JsValue] = identify.async(parse.json) {
     implicit request => {
       Future { validateRequest(request) } flatMap (r => service.matchId(r)) map processResponse recoverWith {
         case e: InvalidIdMatchRequest => Future.successful(BadRequest(getError(e.getLocalizedMessage)))

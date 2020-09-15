@@ -23,12 +23,15 @@ import uk.gov.hmrc.auth.core.AffinityGroup
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class FakeIdentifierAction @Inject()(affinityGroup: AffinityGroup, val parser: BodyParser[AnyContent]) extends IdentifierAction {
+class FakeIdentifierAction @Inject()(bodyParsers: BodyParser[AnyContent], affinityGroup: AffinityGroup)
+                                    (implicit ec: ExecutionContext) extends IdentifierAction {
 
   override def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] =
     block(IdentifierRequest(request, "id", affinityGroup))
 
-  override protected def executionContext: ExecutionContext =
-    scala.concurrent.ExecutionContext.Implicits.global
+  override def parser: BodyParser[AnyContent] =
+    bodyParsers
+
+  override protected def executionContext: ExecutionContext = ec
 
 }

@@ -16,38 +16,22 @@
 
 package services
 
-import config.AppConfig
 import connectors.IdentityMatchConnector
 import models.{IdMatchError, IdMatchResponse}
 import org.mockito.ArgumentMatchers.{eq => mockEq}
 import org.mockito.Mockito.{times, verify}
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-import play.api.{Configuration, Environment}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import util.IdentityMatchHelper
+import util.BaseSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class IdentityMatchServiceSpec extends AnyWordSpec  with IdentityMatchHelper
-                                                    with Matchers
-                                                    with GuiceOneAppPerSuite
-                                                    with FutureAwaits
-                                                    with DefaultAwaitTimeout {
-
-  private val env           = Environment.simple()
-  private val configuration = Configuration.load(env)
-
-  private val serviceConfig = new ServicesConfig(configuration)
-  private val appConfig     = new AppConfig(configuration, serviceConfig)
+class IdentityMatchServiceSpec extends BaseSpec with FutureAwaits with DefaultAwaitTimeout {
 
   implicit val headerCarrier: HeaderCarrier = mock[HeaderCarrier]
 
-  val identityMatchConnector = new IdentityMatchConnector(httpClient, appConfig)
-  val identityMatchService = new IdentityMatchService(identityMatchConnector, repository, appConfig)
+  val identityMatchConnector = application.injector.instanceOf[IdentityMatchConnector]
+  val identityMatchService = application.injector.instanceOf[IdentityMatchService]
 
   "Identity Match Connector" should {
 

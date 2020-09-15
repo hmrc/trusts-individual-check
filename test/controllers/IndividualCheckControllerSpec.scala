@@ -32,19 +32,18 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.test.Helpers._
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import services.IdentityMatchService
+import util.BaseSpec
 
 import scala.concurrent.Future
 
 
-class IndividualCheckControllerSpec extends AnyWordSpec with IdentityMatchHelper with Matchers with GuiceOneAppPerSuite
-  with FutureAwaits
-  with DefaultAwaitTimeout{
+class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
 
   private val service = mock[IdentityMatchService]
 
   when(service.matchId(any())(any(), any())).thenReturn(Future.successful(Right(IdMatchResponse("ID", true))))
 
-  override lazy val app: Application = new GuiceApplicationBuilder()
+  override lazy val app: Application = applicationBuilder()
     .overrides(bind[IndividualCheckRepository].toInstance(repository))
     .overrides(bind[HttpClient].toInstance(httpClient)).build()
 

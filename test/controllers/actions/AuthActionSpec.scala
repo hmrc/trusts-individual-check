@@ -16,39 +16,25 @@
 
 package controllers.actions
 
-import akka.stream.Materializer
 import com.google.inject.Inject
-import config.AppConfig
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{BodyParsers, Results}
-import play.api.test.FakeRequest
+import play.api.libs.json.JsValue
+import play.api.mvc.{Action, BodyParsers, Results}
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AffinityGroup.Individual
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{Retrieval, ~}
 import uk.gov.hmrc.http.HeaderCarrier
+import util.BaseSpec
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.ExecutionContext.Implicits._
 
-class AuthActionSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite {
+class AuthActionSpec extends BaseSpec {
 
   private val cc = stubControllerComponents()
 
-  implicit lazy val mtrlzr = app.injector.instanceOf[Materializer]
-
-  private val appConfig = app.injector.instanceOf[AppConfig]
-
-  def fakeRequest : FakeRequest[JsValue] = FakeRequest("POST", "")
-    .withHeaders(CONTENT_TYPE -> "application/json")
-    .withBody(Json.parse("{}"))
-
   class Harness(authAction: IdentifierAction) {
-    def onSubmit() = authAction.apply(BodyParsers.parse.json) { _ => Results.Ok }
+    def onSubmit(): Action[JsValue] = authAction.apply(cc.parsers.json) { _ => Results.Ok }
   }
 
   private def authRetrievals(affinityGroup: AffinityGroup) =
@@ -56,7 +42,13 @@ class AuthActionSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite 
 
   private val agentAffinityGroup = AffinityGroup.Agent
   private val orgAffinityGroup = AffinityGroup.Organisation
-  private val noEnrollment = Enrolments(Set())
+
+  private def actionToTest(authConnector: AuthConnector) = {
+
+    import scala.concurrent.ExecutionContext.Implicits._
+
+    new AuthenticatedIdentifierAction(authConnector, application.injector.instanceOf[BodyParsers.Default])
+  }
 
   "Auth Action" when {
 
@@ -64,13 +56,13 @@ class AuthActionSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite 
 
       "allow user to continue" in {
 
-        val authAction = new AuthenticatedIdentifierAction(new FakeAuthConnector(authRetrievals(agentAffinityGroup)), cc.parsers.default)
+        val authAction = actionToTest(new FakeAuthConnector(authRetrievals(agentAffinityGroup)))
         val controller = new Harness(authAction)
         val result = controller.onSubmit()(fakeRequest)
 
         status(result) mustBe OK
 
-        app.stop()
+        application.stop()
       }
 
     }
@@ -79,13 +71,13 @@ class AuthActionSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite 
 
       "allow user to continue" in {
 
-        val authAction = new AuthenticatedIdentifierAction(new FakeAuthConnector(authRetrievals(orgAffinityGroup)), cc.parsers.default)
+        val authAction = actionToTest(new FakeAuthConnector(authRetrievals(orgAffinityGroup)))
         val controller = new Harness(authAction)
         val result = controller.onSubmit()(fakeRequest)
 
         status(result) mustBe OK
 
-        app.stop()
+        application.stop()
       }
 
     }
@@ -94,12 +86,12 @@ class AuthActionSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite 
 
       "redirect the user to the unauthorised page" in {
         
-        val authAction = new AuthenticatedIdentifierAction(new FakeAuthConnector(authRetrievals(Individual)), cc.parsers.default)
+        val authAction = actionToTest(new FakeAuthConnector(authRetrievals(Individual)))
         val controller = new Harness(authAction)
         val result = controller.onSubmit()(fakeRequest)
         status(result) mustBe UNAUTHORIZED
 
-        app.stop()
+        application.stop()
       }
 
     }
@@ -108,13 +100,13 @@ class AuthActionSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite 
 
       "redirect the user to log in " in {
 
-        val authAction = new AuthenticatedIdentifierAction(new FakeFailingAuthConnector(new MissingBearerToken), cc.parsers.default)
+        val authAction = actionToTest(new FakeFailingAuthConnector(new MissingBearerToken))
         val controller = new Harness(authAction)
         val result = controller.onSubmit()(fakeRequest)
 
         status(result) mustBe UNAUTHORIZED
 
-        app.stop()
+        application.stop()
       }
     }
 
@@ -122,13 +114,13 @@ class AuthActionSpec extends AnyWordSpec with Matchers with GuiceOneAppPerSuite 
 
       "redirect the user to log in " in {
 
-        val authAction = new AuthenticatedIdentifierAction(new FakeFailingAuthConnector(new BearerTokenExpired), cc.parsers.default)
+        val authAction = actionToTest(new FakeFailingAuthConnector(new BearerTokenExpired))
         val controller = new Harness(authAction)
         val result = controller.onSubmit()(fakeRequest)
 
         status(result) mustBe UNAUTHORIZED
 
-        app.stop()
+        application.stop()
       }
     }
   }
@@ -145,7 +137,7 @@ class FakeFailingAuthConnector @Inject()(exceptionToReturn: Throwable) extends A
 class FakeAuthConnector(stubbedRetrievalResult: Future[_]) extends AuthConnector {
 
   override def authorise[A](predicate: Predicate, retrieval: Retrieval[A])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[A] = {
-    stubbedRetrievalResult.map(_.asInstanceOf[A])(ec)
+    stubbedRetrievalResult.map(_.asInstanceOf[A])
   }
 
 }
