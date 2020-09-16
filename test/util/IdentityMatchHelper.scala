@@ -33,7 +33,7 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
 
   val httpClient:HttpClient = mock[HttpClient]
 
-  val repository:IndividualCheckRepository = mock[IndividualCheckRepository]
+  val mockIndividualCheckRepository:IndividualCheckRepository = mock[IndividualCheckRepository]
 
   val idString = "IDSTRING"
 
@@ -69,14 +69,14 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
   override def beforeEach(): Unit = {
 
     reset(httpClient)
-    reset(repository)
+    reset(mockIndividualCheckRepository)
 
     when {
-      repository.getCounter(idString)
+      mockIndividualCheckRepository.getCounter(idString)
     } thenReturn (Future.successful(0))
 
     when {
-      repository.getCounter(maxAttemptsIdString)
+      mockIndividualCheckRepository.getCounter(maxAttemptsIdString)
     } thenReturn (Future.successful(3))
 
     when {

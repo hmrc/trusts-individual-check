@@ -36,9 +36,9 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
 
     limitedMatch(request).recoverWith {
       case ex: LimitException => getErrorResponse(ex.getLocalizedMessage)
-      case _: InvalidIdMatchResponse => getErrorResponse("Something went wrong")
-      case _: InvalidIdMatchRequest => getErrorResponse("Something went wrong")
-      case _: Exception => getErrorResponse("Something went wrong")
+      case e: InvalidIdMatchResponse => getErrorResponse(s"Something went wrong: $e")
+      case e: InvalidIdMatchRequest => getErrorResponse(s"Something went wrong: $e")
+      case e: Exception => getErrorResponse(s"Something went wrong: $e")
     }
   }
 

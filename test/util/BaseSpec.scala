@@ -54,12 +54,9 @@ class BaseSpec extends AnyWordSpec
   with MockitoSugar
   with BeforeAndAfter
   with GuiceOneServerPerSuite
-  with Inside
-  with IdentityMatchHelper {
+  with Inside {
 
   implicit lazy val hc: HeaderCarrier = HeaderCarrier()
-
-  private val cc = stubControllerComponents()
 
   private val bodyParsers = stubControllerComponents().parsers.defaultBodyParser
 
@@ -68,7 +65,7 @@ class BaseSpec extends AnyWordSpec
   def applicationBuilder(): GuiceApplicationBuilder = {
     new GuiceApplicationBuilder()
       .overrides(
-        bind[IdentifierAction].toInstance(new FakeIdentifierAction( bodyParsers, Organisation))
+        bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, Organisation))
       )
       .configure(
         Seq(
