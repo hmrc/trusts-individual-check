@@ -16,38 +16,29 @@
 
 package services
 
-import config.AppConfig
 import connectors.IdentityMatchConnector
 import models.{IdMatchError, IdMatchResponse}
 import org.mockito.ArgumentMatchers.{eq => mockEq}
 import org.mockito.Mockito.{times, verify}
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.inject.bind
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-import play.api.{Configuration, Environment}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import util.IdentityMatchHelper
+import repositories.IndividualCheckRepository
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import util.{BaseSpec, IdentityMatchHelper}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class IdentityMatchServiceSpec extends AnyWordSpec  with IdentityMatchHelper
-                                                    with Matchers
-                                                    with GuiceOneAppPerSuite
-                                                    with FutureAwaits
-                                                    with DefaultAwaitTimeout {
-
-  private val env           = Environment.simple()
-  private val configuration = Configuration.load(env)
-
-  private val serviceConfig = new ServicesConfig(configuration)
-  private val appConfig     = new AppConfig(configuration, serviceConfig)
+class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
 
   implicit val headerCarrier: HeaderCarrier = mock[HeaderCarrier]
 
-  val identityMatchConnector = new IdentityMatchConnector(httpClient, appConfig)
-  val identityMatchService = new IdentityMatchService(identityMatchConnector, repository, appConfig)
+  override lazy val application = applicationBuilder()
+    .overrides(bind[HttpClient].toInstance(httpClient))
+    .overrides(bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository))
+    .build()
+
+  val identityMatchConnector = application.injector.instanceOf[IdentityMatchConnector]
+  val identityMatchService = application.injector.instanceOf[IdentityMatchService]
 
   "Identity Match Connector" should {
 
@@ -78,25 +69,25 @@ class IdentityMatchServiceSpec extends AnyWordSpec  with IdentityMatchHelper
         response = await(identityMatchService.matchId(failureRequest)),
         matched = false)
 
-      verify(repository, times(1)).incrementCounter(mockEq(idString))
+      verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
 
       shouldRespondWithSpecifiedMatch(
         response = await(identityMatchService.matchId(failureRequest)),
         matched = false)
 
-      verify(repository, times(2)).incrementCounter(mockEq(idString))
+      verify(mockIndividualCheckRepository, times(2)).incrementCounter(mockEq(idString))
 
       shouldRespondWithSpecifiedMatch(
         response = await(identityMatchService.matchId(successRequest)),
         matched = true)
 
-      verify(repository, times(1)).clearCounter(mockEq(idString))
+      verify(mockIndividualCheckRepository, times(1)).clearCounter(mockEq(idString))
     }
   }
 
   def shouldRespondWithSpecifiedMatch(response: Either[IdMatchError, IdMatchResponse], matched: Boolean):Unit = {
     response match {
-      case Left(_) => fail("Should not return errors")
+      case Left(error) => fail(s"Should not return errors: ${error.errors.mkString(", ")}")
       case Right(response) =>
         response.id mustBe idString
         response.idMatch mustBe matched

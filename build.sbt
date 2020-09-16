@@ -31,7 +31,7 @@ lazy val microservice = Project(appName, file("."))
   .configs(IntegrationTest)
   .settings(resolvers += Resolver.jcenterRepo)
   .settings(
-    PlayKeys.playDefaultPort := 9847,
+    PlayKeys.playDefaultPort := 9846,
     RoutesKeys.routesImport += "models._",
     ScoverageKeys.coverageExcludedPackages := "<empty>;scheduler.jobs.*;",
     ScoverageKeys.coverageExcludedFiles := "<empty>;Reverse.*;..*components.*;" +

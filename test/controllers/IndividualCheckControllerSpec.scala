@@ -19,33 +19,28 @@ package controllers
 import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
 import play.api.Application
 import play.api.inject.bind
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import repositories.IndividualCheckRepository
 import uk.gov.hmrc.http.HttpClient
 import util.IdentityMatchHelper
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.test.Helpers._
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import services.IdentityMatchService
+import util.BaseSpec
 
 import scala.concurrent.Future
 
 
-class IndividualCheckControllerSpec extends AnyWordSpec with IdentityMatchHelper with Matchers with GuiceOneAppPerSuite
-  with FutureAwaits
-  with DefaultAwaitTimeout{
+class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
 
   private val service = mock[IdentityMatchService]
 
   when(service.matchId(any())(any(), any())).thenReturn(Future.successful(Right(IdMatchResponse("ID", true))))
 
-  override lazy val app: Application = new GuiceApplicationBuilder()
-    .overrides(bind[IndividualCheckRepository].toInstance(repository))
+  override lazy val app: Application = applicationBuilder()
+    .overrides(bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository))
     .overrides(bind[HttpClient].toInstance(httpClient)).build()
 
   "IndividualCheckController" should {
