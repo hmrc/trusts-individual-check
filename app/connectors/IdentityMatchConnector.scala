@@ -16,11 +16,15 @@
 
 package connectors
 
+import java.util.UUID
+
 import config.AppConfig
 import exceptions.{InvalidIdMatchRequest, InvalidIdMatchResponse}
 import javax.inject.Inject
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import models.api1585.{IdMatchApiRequest, IdMatchApiResponseError, IdMatchApiResponseSuccess}
+import play.api.Logger
+import play.api.http.HeaderNames
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 
@@ -28,12 +32,33 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppConfig) {
 
-  private val postUrl = s"${appConfig.idMatchHost}/${appConfig.idMatchEndpoint}"
+  private val logger = Logger("[IdentityMatchConnector]")
+
+  private val postUrl = appConfig.idMatchEndpoint
+
+  private val ENVIRONMENT_HEADER = "Environment"
+  private val CORRELATION_HEADER = "CorrelationId"
+  private val CONTENT_TYPE = "Content-Type"
+  private val CONTENT_TYPE_JSON = "application/json; charset=utf-8"
+
+  private def headers(correlationId : String) : Seq[(String, String)] =
+    Seq(
+      HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.idMatchToken}",
+      CONTENT_TYPE -> CONTENT_TYPE_JSON,
+      ENVIRONMENT_HEADER -> appConfig.idMatchEnv,
+      CORRELATION_HEADER -> correlationId
+    )
 
   def matchId(  nino: String, surname: String, forename: String, birthDate: String )
-             (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiResponseError, IdMatchApiResponseSuccess]] = {
+             (implicit ec: ExecutionContext): Future[Either[IdMatchApiResponseError, IdMatchApiResponseSuccess]] = {
 
     val request = IdMatchApiRequest(nino, surname, forename, birthDate)
+
+    val correlationId = UUID.randomUUID().toString
+
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headers(correlationId))
+
+    logger.info(s"Matching individual for correlationId: $correlationId")
 
     if(Json.toJson(request).validate[IdMatchApiRequest].isError) {
       throw new InvalidIdMatchRequest("Could not validate the request")
