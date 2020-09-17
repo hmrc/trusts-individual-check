@@ -13,11 +13,6 @@ If a user reaches the maximum number of attempts (x), an `IdMatchError` is retur
 
 If the initial request is invalid, an `IdMatchError` is returned with a message "Could not validate the request".
 
-### To-Do:
-
-- Add authentication
-- Update URL for API#1585
-
 ### License
 
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
