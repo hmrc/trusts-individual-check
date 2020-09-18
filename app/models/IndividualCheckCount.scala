@@ -18,7 +18,7 @@ package models
 
 import play.api.libs.json._
 
-case class IndividualCheckCount(_id: String, attempts: Int)
+case class IndividualCheckCount(id: String, attempts: Int)
 
 object IndividualCheckCount {
   implicit val format = Json.format[IndividualCheckCount]
