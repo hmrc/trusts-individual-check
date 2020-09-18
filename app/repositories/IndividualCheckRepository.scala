@@ -21,6 +21,9 @@ import javax.inject.Inject
 import models.{BinaryResult, IndividualCheckCount, OperationSucceeded}
 import play.api.libs.json.{JsObject, Json}
 import play.modules.reactivemongo.ReactiveMongoApi
+import reactivemongo.api.bson.BSONDocument
+import reactivemongo.api.bson.collection.BSONSerializationPack
+import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import reactivemongo.play.json.collection.JSONCollection
 
@@ -32,12 +35,22 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, appConfig: Ap
 
   val collectionName     : String = "individual-check-counters"
 
-  private def collection : Future[JSONCollection] = mongo.database.map(
-    _.collection[JSONCollection](collectionName)
-  )
+  private def collection : Future[JSONCollection] = for {
+      _ <- ensureIndexes
+      res <- mongo.database.map(_.collection[JSONCollection](collectionName))
+    } yield res
+
+  private lazy val idIndex = MongoIndex("id", "id-index", unique = true)
+
+  private lazy val ensureIndexes = {
+    for {
+      collection              <- mongo.database.map(_.collection[JSONCollection](collectionName))
+      createdIdIndex          <- collection.indexesManager.ensure(idIndex)
+    } yield createdIdIndex
+  }
 
   def getCounter(id: String): Future[Int] = {
-    val selector = Json.obj("_id" -> Json.toJson(id))
+    val selector = Json.obj("id" -> Json.toJson(id))
 
     collection.flatMap {
       _.find[JsObject, JsObject](selector)
@@ -47,7 +60,7 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, appConfig: Ap
   }
 
   def clearCounter(id: String): Future[BinaryResult] = {
-    val selector = Json.obj("_id" -> Json.toJson(id))
+    val selector = Json.obj("id" -> Json.toJson(id))
     collection.flatMap {
       _.findAndRemove(selector).map(_ => OperationSucceeded)
     }
@@ -59,7 +72,7 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, appConfig: Ap
 
   def setCounter(id: String, attempts: Int): Future[BinaryResult] = {
 
-    val selector = Json.obj("_id" -> Json.toJson(id))
+    val selector = Json.obj("id" -> Json.toJson(id))
     val modifier = Json.obj("$set" -> Json.obj("attempts" -> attempts))
 
     collection.flatMap {

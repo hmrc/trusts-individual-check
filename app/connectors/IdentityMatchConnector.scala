@@ -49,7 +49,7 @@ class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppC
       CORRELATION_HEADER -> correlationId
     )
 
-  def matchId(  nino: String, surname: String, forename: String, birthDate: String )
+  def matchId(nino: String, surname: String, forename: String, birthDate: String)
              (implicit ec: ExecutionContext): Future[Either[IdMatchApiResponseError, IdMatchApiResponseSuccess]] = {
 
     val request = IdMatchApiRequest(nino, surname, forename, birthDate)
