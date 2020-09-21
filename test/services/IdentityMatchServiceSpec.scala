@@ -17,6 +17,7 @@
 package services
 
 import connectors.IdentityMatchConnector
+import exceptions.LimitException
 import models.{IdMatchError, IdMatchResponse}
 import org.mockito.ArgumentMatchers.{eq => mockEq}
 import org.mockito.Mockito.{times, verify}
@@ -57,9 +58,9 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
       }
 
       "maximum number of attempts is reached" in {
-        shouldRespondWithSpecifiedError(
-          response = await(identityMatchService.matchId(maxAttemptsRequest)),
-          error = "Individual check - retry limit reached (3)")
+        intercept[LimitException]{
+          await(identityMatchService.matchId(maxAttemptsRequest))
+        }
       }
     }
 

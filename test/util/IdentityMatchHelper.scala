@@ -73,11 +73,11 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
 
     when {
       mockIndividualCheckRepository.getCounter(idString)
-    } thenReturn (Future.successful(0))
+    } thenReturn Future.successful(0)
 
     when {
       mockIndividualCheckRepository.getCounter(maxAttemptsIdString)
-    } thenReturn (Future.successful(3))
+    } thenReturn Future.successful(3)
 
     when {
       httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(successApiRequest), any())(any(), any(), any(), any())

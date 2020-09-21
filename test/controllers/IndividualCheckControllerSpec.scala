@@ -97,6 +97,8 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
     val result = route(app, request)
 
+    status(result.get) mustBe FORBIDDEN
+
     val jsResult = Json.parse(contentAsString(result.get)).validate[IdMatchError]
 
     jsResult.isSuccess mustBe true

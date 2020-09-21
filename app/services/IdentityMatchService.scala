@@ -35,10 +35,8 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
   def matchId(request: IdMatchRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchError, IdMatchResponse]] = {
 
     limitedMatch(request).recoverWith {
-      case ex: LimitException => getErrorResponse(ex.getLocalizedMessage)
       case e: InvalidIdMatchResponse => getErrorResponse(s"Something went wrong: $e")
       case e: InvalidIdMatchRequest => getErrorResponse(s"Something went wrong: $e")
-      case e: Exception => getErrorResponse(s"Something went wrong: $e")
     }
   }
 
