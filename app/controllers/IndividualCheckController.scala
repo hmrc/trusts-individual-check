@@ -17,7 +17,7 @@
 package controllers
 
 import controllers.actions.IdentifierAction
-import exceptions.InvalidIdMatchRequest
+import exceptions.{InvalidIdMatchRequest, LimitException}
 import javax.inject.{Inject, Singleton}
 import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
@@ -36,6 +36,7 @@ class IndividualCheckController @Inject()(service: IdentityMatchService,
   def individualCheck(): Action[JsValue] = identify.async(parse.json) {
     implicit request => {
       Future { validateRequest(request) } flatMap (r => service.matchId(r)) map processResponse recoverWith {
+        case e: LimitException => Future.successful(Forbidden(getError(e.getLocalizedMessage)))
         case e: InvalidIdMatchRequest => Future.successful(BadRequest(getError(e.getLocalizedMessage)))
       }
     }
