@@ -20,7 +20,7 @@ import config.AppConfig
 import connectors.IdentityMatchConnector
 import exceptions.{InvalidIdMatchRequest, InvalidIdMatchResponse, LimitException}
 import javax.inject.Inject
-import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
+import models.{BinaryResult, IdMatchError, IdMatchRequest, IdMatchResponse}
 import models.api1585.IdMatchApiResponseSuccess
 import repositories.IndividualCheckRepository
 import uk.gov.hmrc.http.HeaderCarrier
@@ -32,7 +32,7 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
                                      val appConfig: AppConfig) {
 
 
-  def matchId(request: IdMatchRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchError, IdMatchResponse]] = {
+  def matchId(request: IdMatchRequest)(implicit ec: ExecutionContext): Future[Either[IdMatchError, IdMatchResponse]] = {
 
     limitedMatch(request).recoverWith {
       case e: InvalidIdMatchResponse => getErrorResponse(s"Something went wrong: $e")
@@ -40,7 +40,10 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
     }
   }
 
-  private def limitedMatch(request: IdMatchRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchError, IdMatchResponse]] = {
+  def clearCounter(id: String): Future[BinaryResult] =
+    repository.clearCounter(id)
+
+  private def limitedMatch(request: IdMatchRequest)(implicit ec: ExecutionContext): Future[Either[IdMatchError, IdMatchResponse]] = {
 
     repository.getCounter(request.id).flatMap { count =>
       if (count >= appConfig.maxIdAttempts) {
@@ -49,7 +52,7 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
         connector.matchId(request.nino, request.surname, request.forename, request.birthDate).map {
           case Right(IdMatchApiResponseSuccess(matched)) =>
             if(matched) {
-              repository.clearCounter(request.id)
+              clearCounter(request.id)
             } else {
               repository.incrementCounter(request.id)
             }

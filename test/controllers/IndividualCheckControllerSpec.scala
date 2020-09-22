@@ -37,7 +37,8 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
   private val service = mock[IdentityMatchService]
 
-  when(service.matchId(any())(any(), any())).thenReturn(Future.successful(Right(IdMatchResponse("ID", true))))
+  when(service.matchId(any())(any()))
+    .thenReturn(Future.successful(Right(IdMatchResponse("ID", true))))
 
   override lazy val app: Application = applicationBuilder()
     .overrides(bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository))
