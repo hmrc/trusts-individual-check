@@ -39,13 +39,17 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
 
   val maxAttemptsIdString = "MAX ATTEMPTS"
 
-  val matchSuccess:JsValue = Json.parse("""{"individualMatch":true}""")
+  val matchSuccessBody = """{"individualMatch":true}"""
+
+  val matchSuccess:JsValue = Json.parse(matchSuccessBody)
 
   val matchFailure:JsValue = Json.parse("""{"individualMatch":false}""")
 
-  val matchError:JsValue = Json.parse("""{"failures":[{
-                                        |"code":"RESOURCE_NOT_FOUND",
-                                        |"reason":"The remote endpoint has indicated that no data can be found."}]}""".stripMargin)
+  val matchErrorBody = """{"failures":[{
+                         |"code":"RESOURCE_NOT_FOUND",
+                         |"reason":"The remote endpoint has indicated that no data can be found."}]}""".stripMargin
+
+  val matchError:JsValue = Json.parse(matchErrorBody)
 
   val successRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456A", "Name", "Name", "2000-01-01")
 
