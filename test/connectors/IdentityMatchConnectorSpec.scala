@@ -98,6 +98,25 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
         }
       }
 
+      "internal server error is returned from the API" in {
+
+        server.stubFor(post(urlEqualTo("/individuals/match"))
+          .withHeader(CONTENT_TYPE, containing("application/json"))
+          .withHeader("Environment", containing("dev"))
+          .willReturn(
+            aResponse()
+              .withStatus(INTERNAL_SERVER_ERROR)
+              .withBody(internalServerErrorBody)))
+
+        val result: Future[Either[IdMatchApiResponseError, IdMatchApiResponseSuccess]] =
+          identityMatchConnector.matchId(errorRequest.nino, errorRequest.surname, errorRequest.forename, errorRequest.birthDate)
+
+        whenReady(result) {
+          r =>
+            r.left.value mustBe internalServerError.as[IdMatchApiResponseError]
+        }
+      }
+
       "throw an exception" when {
 
         "the request fails validation" in {

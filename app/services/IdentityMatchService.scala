@@ -21,7 +21,7 @@ import connectors.IdentityMatchConnector
 import exceptions.{InvalidIdMatchRequest, InvalidIdMatchResponse, LimitException}
 import javax.inject.Inject
 import models.{BinaryResult, IdMatchError, IdMatchRequest, IdMatchResponse}
-import models.api1585.IdMatchApiResponseSuccess
+import models.api1585.{ErrorResponseDetail, IdMatchApiResponseSuccess}
 import repositories.IndividualCheckRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -57,14 +57,14 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
               repository.incrementCounter(request.id)
             }
             Right(IdMatchResponse(id = request.id, idMatch = matched))
-          case Left(_) =>
-            Left(IdMatchError(Seq("Something went wrong")))
+          case Left(e) =>
+            Left(IdMatchError(e.failures))
         }
       }
     }
   }
 
   private def getErrorResponse(msg: String) = {
-    Future.successful(Left(IdMatchError(Seq(msg))))
+    Future.successful(Left(IdMatchError(Seq(ErrorResponseDetail("INTERNAL_SERVER_ERROR", msg)))))
   }
 }

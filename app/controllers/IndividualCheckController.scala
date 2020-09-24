@@ -19,8 +19,9 @@ package controllers
 import controllers.actions.IdentifierAction
 import exceptions.{InvalidIdMatchRequest, LimitException}
 import javax.inject.{Inject, Singleton}
-import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
-import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
+import models.api1585.ErrorResponseDetail
+import models.{IdMatchError, IdMatchRequest, IdMatchResponse, IdMatchStringError}
+import play.api.libs.json.{JsArray, JsError, JsString, JsSuccess, JsValue, Json}
 import play.api.mvc.{Action, ControllerComponents, Request, Result}
 import services.IdentityMatchService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -50,10 +51,16 @@ class IndividualCheckController @Inject()(service: IdentityMatchService,
   }
 
   private def processResponse(response: Either[IdMatchError, IdMatchResponse]): Result = {
-    Ok(response.fold(e => Json.toJson(e), x => Json.toJson(x)))
+
+    response match {
+      case Left(IdMatchError(Seq(ErrorResponseDetail("INTERNAL_SERVER_ERROR", reason)))) =>
+        InternalServerError(Json.obj("errors" -> Seq(JsString(reason))))
+      case Right(value) =>
+        Ok(Json.toJson(value))
+    }
   }
 
   private def getError(msg: String): JsValue = {
-    Json.toJson(IdMatchError(Seq(msg)))
+    Json.toJson(IdMatchStringError(Seq(msg)))
   }
 }

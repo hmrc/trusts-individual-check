@@ -45,11 +45,34 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
 
   val matchFailure:JsValue = Json.parse("""{"individualMatch":false}""")
 
-  val matchErrorBody = """{"failures":[{
-                         |"code":"RESOURCE_NOT_FOUND",
-                         |"reason":"The remote endpoint has indicated that no data can be found."}]}""".stripMargin
+  val internalServerErrorBody:String = """{
+                                  |  "failures": [
+                                  |    {
+                                  |      "code": "SERVER_ERROR",
+                                  |      "reason": "IF is currently experiencing problems that require live service intervention."
+                                  |    }
+                                  |  ]
+                                  |}""".stripMargin
+
+  val serviceUnavailableErrorBody:String = """{
+                                             |  "failures": [
+                                             |    {
+                                             |      "code": "SERVICE_UNAVAILABLE",
+                                             |      "reason": "Dependent systems are currently not responding."
+                                             |    }
+                                             |  ]
+                                             |}""".stripMargin
+
+
+  val matchErrorBody:String = """{"failures":[{
+                                |"code":"RESOURCE_NOT_FOUND",
+                                |"reason":"The remote endpoint has indicated that no data can be found."}]}""".stripMargin
 
   val matchError:JsValue = Json.parse(matchErrorBody)
+
+  val internalServerError:JsValue = Json.parse(internalServerErrorBody)
+
+  val serviceUnavailableError:JsValue = Json.parse(serviceUnavailableErrorBody)
 
   val successRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456A", "Name", "Name", "2000-01-01")
 
@@ -65,7 +88,11 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
 
   val errorRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Name", "Name", "2000-01-01")
 
+  val serviceUnavailableRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Unavailable", "Service", "2000-01-01")
+
   val errorApiRequest:IdMatchApiRequest = IdMatchApiRequest(errorRequest.nino, errorRequest.surname, errorRequest.forename, errorRequest.birthDate)
+
+  val serviceUnavailableApiRequest:IdMatchApiRequest = IdMatchApiRequest(errorRequest.nino, "Unavailable", "Service", errorRequest.birthDate)
 
   val maxAttemptsRequest:IdMatchRequest = IdMatchRequest(maxAttemptsIdString, "AB123456A", "Name", "Name", "2000-01-01")
 
@@ -94,5 +121,13 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
     when {
       httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(errorApiRequest), any())(any(), any(), any(), any())
     } thenReturn Future(matchError)
+
+    when {
+      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(errorApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(matchError)
+
+    when {
+      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(serviceUnavailableApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(serviceUnavailableError)
   }
 }

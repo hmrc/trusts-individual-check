@@ -16,24 +16,24 @@
 
 package controllers
 
-import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
+import models.{IdMatchRequest, IdMatchResponse}
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
+import org.scalatest.matchers.must.Matchers
 import play.api.Application
 import play.api.inject.bind
 import play.api.libs.json.Json
-import repositories.IndividualCheckRepository
-import uk.gov.hmrc.http.HttpClient
-import util.IdentityMatchHelper
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
 import play.api.test.Helpers._
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
+import repositories.IndividualCheckRepository
 import services.IdentityMatchService
-import util.BaseSpec
+import uk.gov.hmrc.http.HttpClient
+import util.{BaseSpec, IdentityMatchHelper}
 
 import scala.concurrent.Future
 
 
-class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
+class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout with Matchers {
 
   private val service = mock[IdentityMatchService]
 
@@ -51,59 +51,85 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
       val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
         .withJsonBody(Json.toJson(successRequest))
 
-      val result = route(app, request)
+      val result = route(app, request).get
 
-      val jsResult = Json.parse(contentAsString(result.get)).validate[IdMatchResponse]
+      status(result) mustBe OK
 
-      jsResult.isSuccess mustBe true
-
-      jsResult.get mustBe successResponse
+      contentAsJson(result) mustBe Json.toJson(successResponse)
     }
-  }
 
-  "return a response to an invalid request" in {
+    "return a response to an invalid request" in {
 
-    val requestWithInvalidNino = IdMatchRequest(id = idString, nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
+      val requestWithInvalidNino = IdMatchRequest(id = idString, nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
 
-    val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-      .withJsonBody(Json.toJson(requestWithInvalidNino))
+      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+        .withJsonBody(Json.toJson(requestWithInvalidNino))
 
-    val result = route(app, request)
+      val result = route(app, request).get
 
-    val jsResult = Json.parse(contentAsString(result.get)).validate[IdMatchError]
+      status(result) mustBe BAD_REQUEST
 
-    jsResult.isSuccess mustBe true
+      contentAsJson(result) mustBe Json.toJson(Json.parse(
+        """
+          |{
+          | "error":
+          |   "Could not validate the request"
+          | ]
+          |}""".stripMargin))
+    }
 
-    jsResult.get.errors.contains("Could not validate the request") mustBe true
-  }
+    "return a generic response if API sends an error" in {
 
-  "return a generic response if API sends an error" in {
+      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+        .withJsonBody(Json.toJson(errorRequest))
 
-    val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-      .withJsonBody(Json.toJson(errorRequest))
+      val result = route(app, request).get
 
-    val result = route(app, request)
+      status(result) mustBe INTERNAL_SERVER_ERROR
 
-    val jsResult = Json.parse(contentAsString(result.get)).validate[IdMatchError]
+      contentAsJson(result) mustBe Json.toJson(Json.parse(
+        """
+          |{
+          | "errors": [
+          |   "Something went wrong"
+          | ]
+          |}""".stripMargin))
+    }
 
-    jsResult.isSuccess mustBe true
+    "return a service unavailable if API sends 503" in {
 
-    jsResult.get.errors.contains("Something went wrong") mustBe true
-  }
+      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+        .withJsonBody(Json.toJson(serviceUnavailableRequest))
 
-  "return a specific response if API limit is reached" in {
+      val result = route(app, request).get
 
-    val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-      .withJsonBody(Json.toJson(maxAttemptsRequest))
+      status(result) mustBe SERVICE_UNAVAILABLE
 
-    val result = route(app, request)
+      contentAsJson(result) mustBe Json.toJson(Json.parse(
+        """
+          |{
+          | "errors": [
+          |   "Dependent systems are currently not responding."
+          | ]
+          |}""".stripMargin))
+    }
 
-    status(result.get) mustBe FORBIDDEN
+    "return a specific response if API limit is reached" in {
 
-    val jsResult = Json.parse(contentAsString(result.get)).validate[IdMatchError]
+      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+        .withJsonBody(Json.toJson(maxAttemptsRequest))
 
-    jsResult.isSuccess mustBe true
+      val result = route(app, request).get
 
-    jsResult.get.errors.contains("Individual check - retry limit reached (3)") mustBe true
+      status(result) mustBe FORBIDDEN
+
+      contentAsJson(result) mustBe Json.toJson(Json.parse(
+        """
+          |{
+          | "errors": [
+          |   "Individual check - retry limit reached (3)"
+          | ]
+          |}""".stripMargin))
+    }
   }
 }
