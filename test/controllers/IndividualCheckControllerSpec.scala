@@ -78,7 +78,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
           |}""".stripMargin))
     }
 
-    "return a generic response if API sends an error" in {
+    "return not found if the API is unable to locate the nino" in {
 
       val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
         .withJsonBody(Json.toJson(notFoundRequest))
@@ -110,6 +110,24 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
           |{
           | "errors": [
           |   "Dependent service is unavailable"
+          | ]
+          |}""".stripMargin))
+    }
+
+    "return a internal server error if API sends 500" in {
+
+      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+        .withJsonBody(Json.toJson(internalServerErrorRequest))
+
+      val result = route(app, request).get
+
+      status(result) mustBe INTERNAL_SERVER_ERROR
+
+      contentAsJson(result) mustBe Json.toJson(Json.parse(
+        """
+          |{
+          | "errors": [
+          |   "IF is currently experiencing problems that require live service intervention"
           | ]
           |}""".stripMargin))
     }

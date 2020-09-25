@@ -18,7 +18,7 @@ package services
 
 import connectors.IdentityMatchConnector
 import exceptions.LimitException
-import models.api1585.{IdMatchApiError, NinoNotFound, ServerError}
+import models.api1585.{IdMatchApiError, NinoNotFound, DownstreamServerError}
 import models.{IdMatchError, IdMatchResponse}
 import org.mockito.ArgumentMatchers.{eq => mockEq}
 import org.mockito.Mockito.{times, verify}

@@ -112,7 +112,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
 
         whenReady(result) {
           r =>
-            r mustBe ServerError
+            r mustBe DownstreamServerError
         }
       }
 

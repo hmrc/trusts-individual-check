@@ -26,7 +26,7 @@ sealed trait IdMatchApiError extends IdMatchApiResponse
 final case class IdMatchApiResponseSuccess(individualMatch: Boolean) extends IdMatchApiResponse
 final case class DownstreamBadRequest(reason : ErrorResponseDetail) extends IdMatchApiError
 case object NinoNotFound extends IdMatchApiError
-case object ServerError extends IdMatchApiError
+case object DownstreamServerError extends IdMatchApiError
 case object DownstreamServiceUnavailable extends IdMatchApiError
 
 object IdMatchApiResponseSuccess {
@@ -41,11 +41,11 @@ object IdMatchApiHttpReads {
       case OK => response.json.as[IdMatchApiResponseSuccess]
       case BAD_REQUEST =>
         (response.json \ "failures").asOpt[ErrorResponseDetail] match {
-          case None => ServerError
+          case None => DownstreamServerError
           case Some(value) => DownstreamBadRequest(value)
         }
       case NOT_FOUND => NinoNotFound
-      case INTERNAL_SERVER_ERROR => ServerError
+      case INTERNAL_SERVER_ERROR => DownstreamServerError
       case _ => DownstreamServiceUnavailable
     }
   }

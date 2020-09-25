@@ -54,7 +54,7 @@ class IndividualCheckController @Inject()(service: IdentityMatchService,
   private def processResponse(response: Either[IdMatchApiError, IdMatchResponse]): Result = {
 
     response match {
-      case Left(ServerError) =>
+      case Left(DownstreamServerError) =>
         val response = IdMatchError(Seq("IF is currently experiencing problems that require live service intervention"))
         InternalServerError(Json.toJson(response))
       case Left(DownstreamBadRequest(reason)) =>

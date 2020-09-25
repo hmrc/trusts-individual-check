@@ -20,7 +20,7 @@ import config.AppConfig
 import connectors.IdentityMatchConnector
 import exceptions.{InvalidIdMatchRequest, LimitException}
 import javax.inject.Inject
-import models.api1585.{IdMatchApiError, IdMatchApiResponseSuccess, ServerError}
+import models.api1585.{IdMatchApiError, IdMatchApiResponseSuccess, DownstreamServerError}
 import models.{BinaryResult, IdMatchRequest, IdMatchResponse}
 import play.api.Logging
 import repositories.IndividualCheckRepository
@@ -36,7 +36,7 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
     limitedMatch(request).recoverWith {
       case _: InvalidIdMatchRequest =>
         logger.warn(s"[IdMatchService] unable to send request, failed validation")
-        Future.successful(Left(ServerError))
+        Future.successful(Left(DownstreamServerError))
     }
   }
 

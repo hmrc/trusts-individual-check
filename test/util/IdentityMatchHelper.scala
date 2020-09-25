@@ -17,7 +17,7 @@
 package util
 
 import models.{IdMatchRequest, IdMatchResponse}
-import models.api1585.{DownstreamServiceUnavailable, IdMatchApiRequest, IdMatchApiResponse, IdMatchApiResponseSuccess, NinoNotFound}
+import models.api1585.{DownstreamServiceUnavailable, IdMatchApiRequest, IdMatchApiResponse, IdMatchApiResponseSuccess, NinoNotFound, DownstreamServerError}
 import org.mockito.Mockito.{reset, when}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsValue, Json}
@@ -90,9 +90,13 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
 
   val serviceUnavailableRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Unavailable", "Service", "2000-01-01")
 
+  val internalServerErrorRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Error", "Service", "2000-01-01")
+
   val notFoundApiRequest:IdMatchApiRequest = IdMatchApiRequest(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
 
-  val serviceUnavailableApiRequest:IdMatchApiRequest = IdMatchApiRequest(notFoundRequest.nino, "Unavailable", "Service", notFoundRequest.birthDate)
+  val serviceUnavailableApiRequest:IdMatchApiRequest = IdMatchApiRequest(serviceUnavailableRequest.nino, "Unavailable", "Service", serviceUnavailableRequest.birthDate)
+
+  val internalServerErrorApiRequest:IdMatchApiRequest = IdMatchApiRequest(internalServerErrorRequest.nino, "Error", "Service", internalServerErrorRequest.birthDate)
 
   val maxAttemptsRequest:IdMatchRequest = IdMatchRequest(maxAttemptsIdString, "AB123456A", "Name", "Name", "2000-01-01")
 
@@ -125,5 +129,9 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
     when {
       httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(serviceUnavailableApiRequest), any())(any(), any(), any(), any())
     } thenReturn Future(DownstreamServiceUnavailable)
+
+    when {
+      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(internalServerErrorApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(DownstreamServerError)
   }
 }
