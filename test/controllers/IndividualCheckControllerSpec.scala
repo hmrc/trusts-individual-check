@@ -72,7 +72,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
       contentAsJson(result) mustBe Json.toJson(Json.parse(
         """
           |{
-          | "error":
+          | "errors": [
           |   "Could not validate the request"
           | ]
           |}""".stripMargin))
@@ -81,17 +81,17 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
     "return a generic response if API sends an error" in {
 
       val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-        .withJsonBody(Json.toJson(errorRequest))
+        .withJsonBody(Json.toJson(notFoundRequest))
 
       val result = route(app, request).get
 
-      status(result) mustBe INTERNAL_SERVER_ERROR
+      status(result) mustBe NOT_FOUND
 
       contentAsJson(result) mustBe Json.toJson(Json.parse(
         """
           |{
           | "errors": [
-          |   "Something went wrong"
+          |   "Dependent service indicated that no data can be found"
           | ]
           |}""".stripMargin))
     }
@@ -109,7 +109,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
         """
           |{
           | "errors": [
-          |   "Dependent systems are currently not responding."
+          |   "Dependent service is unavailable"
           | ]
           |}""".stripMargin))
     }

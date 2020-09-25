@@ -17,10 +17,10 @@
 package util
 
 import models.{IdMatchRequest, IdMatchResponse}
-import models.api1585.IdMatchApiRequest
+import models.api1585.{DownstreamServiceUnavailable, IdMatchApiRequest, IdMatchApiResponse, IdMatchApiResponseSuccess, NinoNotFound}
 import org.mockito.Mockito.{reset, when}
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.libs.json.{ JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import org.mockito.ArgumentMatchers.{any, eq => mockEq}
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import repositories.IndividualCheckRepository
@@ -86,13 +86,13 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
 
   val failureResponse:IdMatchResponse = IdMatchResponse(idString, false)
 
-  val errorRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Name", "Name", "2000-01-01")
+  val notFoundRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Name", "Name", "2000-01-01")
 
   val serviceUnavailableRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Unavailable", "Service", "2000-01-01")
 
-  val errorApiRequest:IdMatchApiRequest = IdMatchApiRequest(errorRequest.nino, errorRequest.surname, errorRequest.forename, errorRequest.birthDate)
+  val notFoundApiRequest:IdMatchApiRequest = IdMatchApiRequest(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
 
-  val serviceUnavailableApiRequest:IdMatchApiRequest = IdMatchApiRequest(errorRequest.nino, "Unavailable", "Service", errorRequest.birthDate)
+  val serviceUnavailableApiRequest:IdMatchApiRequest = IdMatchApiRequest(notFoundRequest.nino, "Unavailable", "Service", notFoundRequest.birthDate)
 
   val maxAttemptsRequest:IdMatchRequest = IdMatchRequest(maxAttemptsIdString, "AB123456A", "Name", "Name", "2000-01-01")
 
@@ -111,23 +111,19 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
     } thenReturn Future.successful(3)
 
     when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(successApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchSuccess)
+      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(successApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(matchSuccess.as[IdMatchApiResponseSuccess])
 
     when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(failureApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchFailure)
+      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(failureApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(matchFailure.as[IdMatchApiResponseSuccess])
 
     when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(errorApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchError)
+      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(notFoundApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(NinoNotFound)
 
     when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(errorApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchError)
-
-    when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(serviceUnavailableApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(serviceUnavailableError)
+      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(serviceUnavailableApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(DownstreamServiceUnavailable)
   }
 }

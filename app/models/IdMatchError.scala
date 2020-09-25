@@ -16,19 +16,11 @@
 
 package models
 
-import models.api1585.ErrorResponseDetail
 import play.api.libs.json.{Format, Json}
 
-final case class IdMatchError(errors: Seq[ErrorResponseDetail])
-final case class IdMatchStringError(errors: Seq[String])
+final case class IdMatchError(errors: Seq[String])
 
 object IdMatchError {
-
   implicit val format: Format[IdMatchError] = Json.format[IdMatchError]
-
-}
-
-object IdMatchStringError {
-  implicit val format: Format[IdMatchStringError] = Json.format[IdMatchStringError]
 }
 

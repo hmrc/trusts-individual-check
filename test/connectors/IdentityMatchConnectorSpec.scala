@@ -17,8 +17,8 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import exceptions.{InvalidIdMatchRequest, InvalidIdMatchResponse}
-import models.api1585.{IdMatchApiRequest, IdMatchApiResponseError, IdMatchApiResponseSuccess}
+import exceptions.InvalidIdMatchRequest
+import models.api1585._
 import org.scalatest.EitherValues
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
@@ -27,12 +27,11 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status._
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.DefaultAwaitTimeout
-import play.api.test.Helpers.{CONTENT_TYPE, await}
+import play.api.test.Helpers.CONTENT_TYPE
 import uk.gov.hmrc.http.HeaderCarrier
 import util.IdentityMatchHelper
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
                                                       with Matchers
@@ -75,7 +74,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
 
         whenReady(result) {
           r =>
-            r.right.value mustBe IdMatchApiResponseSuccess(true)
+            r mustBe IdMatchApiResponseSuccess(true)
         }
       }
 
@@ -89,12 +88,12 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
               .withStatus(NOT_FOUND)
               .withBody(matchErrorBody)))
 
-        val result: Future[Either[IdMatchApiResponseError, IdMatchApiResponseSuccess]] =
-          identityMatchConnector.matchId(errorRequest.nino, errorRequest.surname, errorRequest.forename, errorRequest.birthDate)
+        val result =
+          identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
 
         whenReady(result) {
           r =>
-            r.left.value mustBe matchError.as[IdMatchApiResponseError]
+            r mustBe NinoNotFound
         }
       }
 
@@ -108,12 +107,31 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
               .withStatus(INTERNAL_SERVER_ERROR)
               .withBody(internalServerErrorBody)))
 
-        val result: Future[Either[IdMatchApiResponseError, IdMatchApiResponseSuccess]] =
-          identityMatchConnector.matchId(errorRequest.nino, errorRequest.surname, errorRequest.forename, errorRequest.birthDate)
+        val result =
+          identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
 
         whenReady(result) {
           r =>
-            r.left.value mustBe internalServerError.as[IdMatchApiResponseError]
+            r mustBe ServerError
+        }
+      }
+
+      "service unavailable is returned from the API" in {
+
+        server.stubFor(post(urlEqualTo("/individuals/match"))
+          .withHeader(CONTENT_TYPE, containing("application/json"))
+          .withHeader("Environment", containing("dev"))
+          .willReturn(
+            aResponse()
+              .withStatus(SERVICE_UNAVAILABLE)
+              .withBody(matchErrorBody)))
+
+        val result =
+          identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
+
+        whenReady(result) {
+          r =>
+            r mustBe DownstreamServiceUnavailable
         }
       }
 
@@ -129,25 +147,6 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
           }
 
           caught.getMessage mustBe "Could not validate the request"
-        }
-
-        "the response fails validation" in {
-
-          val invalidRequest: IdMatchApiRequest = IdMatchApiRequest("AB123456C", "Name", "Name", "2000-01-01")
-
-          server.stubFor(post(urlEqualTo("/individuals/match"))
-            .withHeader(CONTENT_TYPE, containing("application/json"))
-            .withHeader("Environment", containing("dev"))
-            .willReturn(
-              aResponse()
-                .withStatus(OK)
-                .withBody("""{"invalid": "invalid response"}""".stripMargin)))
-
-          val caught = intercept[InvalidIdMatchResponse] {
-            await(identityMatchConnector.matchId(invalidRequest.nino, invalidRequest.surname, invalidRequest.forename, invalidRequest.birthDate))
-          }
-
-          caught.getMessage mustBe "Could not validate the response"
         }
       }
     }

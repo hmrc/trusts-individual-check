@@ -27,15 +27,6 @@ class IdMatchApiResponseSpec extends AnyWordSpec  with MustMatchers{
 
   private val exampleSuccess:IdMatchApiResponseSuccess = IdMatchApiResponseSuccess(individualMatch = true)
 
-  private val exampleErrorJson:String =
-    """{"failures":[{"code":"RESOURCE_NOT_FOUND","reason":"The remote endpoint has indicated that no data can be found."}]}""".stripMargin
-
-  private val exampleErrorObj:IdMatchApiResponseError = IdMatchApiResponseError(
-    failures = Seq(ErrorResponseDetail(
-      code = "RESOURCE_NOT_FOUND",
-      reason = "The remote endpoint has indicated that no data can be found.")))
-
-
   "successful Response" should {
 
     "read correctly" in {
@@ -47,20 +38,6 @@ class IdMatchApiResponseSpec extends AnyWordSpec  with MustMatchers{
     "write correctly" in {
       val json:JsValue = Json.toJson(exampleSuccess)
       Json.stringify(json).mustBe(exampleSuccessJson)
-    }
-  }
-
-  "error Response" should {
-
-    "read correctly" in {
-      val json = Json.parse(exampleErrorJson)
-      val obj = Json.fromJson[IdMatchApiResponseError](json).get
-      obj.mustBe(exampleErrorObj)
-    }
-
-    "write correctly" in {
-      val json:JsValue = Json.toJson(exampleErrorObj)
-      Json.stringify(json).mustBe(exampleErrorJson)
     }
   }
 }

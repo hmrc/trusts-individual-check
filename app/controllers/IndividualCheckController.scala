@@ -19,9 +19,9 @@ package controllers
 import controllers.actions.IdentifierAction
 import exceptions.{InvalidIdMatchRequest, LimitException}
 import javax.inject.{Inject, Singleton}
-import models.api1585.ErrorResponseDetail
-import models.{IdMatchError, IdMatchRequest, IdMatchResponse, IdMatchStringError}
-import play.api.libs.json.{JsArray, JsError, JsString, JsSuccess, JsValue, Json}
+import models.api1585._
+import models.{IdMatchRequest, IdMatchResponse, IdMatchError}
+import play.api.libs.json._
 import play.api.mvc.{Action, ControllerComponents, Request, Result}
 import services.IdentityMatchService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -35,12 +35,13 @@ class IndividualCheckController @Inject()(service: IdentityMatchService,
                                          )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def individualCheck(): Action[JsValue] = identify.async(parse.json) {
-    implicit request => {
-      Future { validateRequest(request) } flatMap (r => service.matchId(r)) map processResponse recoverWith {
-        case e: LimitException => Future.successful(Forbidden(getError(e.getLocalizedMessage)))
-        case e: InvalidIdMatchRequest => Future.successful(BadRequest(getError(e.getLocalizedMessage)))
+    implicit request =>
+      Future(validateRequest(request)) flatMap { r =>
+        service.matchId(r)
+      } map processResponse recoverWith {
+          case e: LimitException => Future.successful(Forbidden(getError(e.getLocalizedMessage)))
+          case e: InvalidIdMatchRequest => Future.successful(BadRequest(getError(e.getLocalizedMessage)))
       }
-    }
   }
 
   private def validateRequest(request: Request[JsValue]): IdMatchRequest = {
@@ -50,17 +51,27 @@ class IndividualCheckController @Inject()(service: IdentityMatchService,
     }
   }
 
-  private def processResponse(response: Either[IdMatchError, IdMatchResponse]): Result = {
+  private def processResponse(response: Either[IdMatchApiError, IdMatchResponse]): Result = {
 
     response match {
-      case Left(IdMatchError(Seq(ErrorResponseDetail("INTERNAL_SERVER_ERROR", reason)))) =>
-        InternalServerError(Json.obj("errors" -> Seq(JsString(reason))))
+      case Left(ServerError) =>
+        val response = IdMatchError(Seq("IF is currently experiencing problems that require live service intervention"))
+        InternalServerError(Json.toJson(response))
+      case Left(DownstreamBadRequest(reason)) =>
+        val response = IdMatchError(Seq(reason.reason))
+        InternalServerError(Json.toJson(response))
+      case Left(NinoNotFound) =>
+        val response = IdMatchError(Seq("Dependent service indicated that no data can be found"))
+        NotFound(Json.toJson(response))
+      case Left(DownstreamServiceUnavailable) =>
+        val response = IdMatchError(Seq("Dependent service is unavailable"))
+        ServiceUnavailable(Json.toJson(response))
       case Right(value) =>
         Ok(Json.toJson(value))
     }
   }
 
   private def getError(msg: String): JsValue = {
-    Json.toJson(IdMatchStringError(Seq(msg)))
+    Json.toJson(IdMatchError(Seq(msg)))
   }
 }
