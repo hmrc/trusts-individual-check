@@ -17,10 +17,10 @@
 package util
 
 import models.{IdMatchRequest, IdMatchResponse}
-import models.api1585.IdMatchApiRequest
+import models.api1585.{DownstreamServiceUnavailable, IdMatchApiRequest, IdMatchApiResponse, IdMatchApiResponseSuccess, NinoNotFound, DownstreamServerError}
 import org.mockito.Mockito.{reset, when}
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.libs.json.{ JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import org.mockito.ArgumentMatchers.{any, eq => mockEq}
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import repositories.IndividualCheckRepository
@@ -39,13 +39,40 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
 
   val maxAttemptsIdString = "MAX ATTEMPTS"
 
-  val matchSuccess:JsValue = Json.parse("""{"individualMatch":true}""")
+  val matchSuccessBody = """{"individualMatch":true}"""
+
+  val matchSuccess:JsValue = Json.parse(matchSuccessBody)
 
   val matchFailure:JsValue = Json.parse("""{"individualMatch":false}""")
 
-  val matchError:JsValue = Json.parse("""{"failures":[{
-                                        |"code":"RESOURCE_NOT_FOUND",
-                                        |"reason":"The remote endpoint has indicated that no data can be found."}]}""".stripMargin)
+  val internalServerErrorBody:String = """{
+                                  |  "failures": [
+                                  |    {
+                                  |      "code": "SERVER_ERROR",
+                                  |      "reason": "IF is currently experiencing problems that require live service intervention."
+                                  |    }
+                                  |  ]
+                                  |}""".stripMargin
+
+  val serviceUnavailableErrorBody:String = """{
+                                             |  "failures": [
+                                             |    {
+                                             |      "code": "SERVICE_UNAVAILABLE",
+                                             |      "reason": "Dependent systems are currently not responding."
+                                             |    }
+                                             |  ]
+                                             |}""".stripMargin
+
+
+  val matchErrorBody:String = """{"failures":[{
+                                |"code":"RESOURCE_NOT_FOUND",
+                                |"reason":"The remote endpoint has indicated that no data can be found."}]}""".stripMargin
+
+  val matchError:JsValue = Json.parse(matchErrorBody)
+
+  val internalServerError:JsValue = Json.parse(internalServerErrorBody)
+
+  val serviceUnavailableError:JsValue = Json.parse(serviceUnavailableErrorBody)
 
   val successRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456A", "Name", "Name", "2000-01-01")
 
@@ -59,9 +86,17 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
 
   val failureResponse:IdMatchResponse = IdMatchResponse(idString, false)
 
-  val errorRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Name", "Name", "2000-01-01")
+  val notFoundRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Name", "Name", "2000-01-01")
 
-  val errorApiRequest:IdMatchApiRequest = IdMatchApiRequest(errorRequest.nino, errorRequest.surname, errorRequest.forename, errorRequest.birthDate)
+  val serviceUnavailableRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Unavailable", "Service", "2000-01-01")
+
+  val internalServerErrorRequest:IdMatchRequest = IdMatchRequest(idString, "AB123456C", "Error", "Service", "2000-01-01")
+
+  val notFoundApiRequest:IdMatchApiRequest = IdMatchApiRequest(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
+
+  val serviceUnavailableApiRequest:IdMatchApiRequest = IdMatchApiRequest(serviceUnavailableRequest.nino, "Unavailable", "Service", serviceUnavailableRequest.birthDate)
+
+  val internalServerErrorApiRequest:IdMatchApiRequest = IdMatchApiRequest(internalServerErrorRequest.nino, "Error", "Service", internalServerErrorRequest.birthDate)
 
   val maxAttemptsRequest:IdMatchRequest = IdMatchRequest(maxAttemptsIdString, "AB123456A", "Name", "Name", "2000-01-01")
 
@@ -80,15 +115,23 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
     } thenReturn Future.successful(3)
 
     when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(successApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchSuccess)
+      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(successApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(matchSuccess.as[IdMatchApiResponseSuccess])
 
     when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(failureApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchFailure)
+      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(failureApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(matchFailure.as[IdMatchApiResponseSuccess])
 
     when {
-      httpClient.POST[IdMatchApiRequest, JsValue](any(), mockEq(errorApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchError)
+      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(notFoundApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(NinoNotFound)
+
+    when {
+      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(serviceUnavailableApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(DownstreamServiceUnavailable)
+
+    when {
+      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(internalServerErrorApiRequest), any())(any(), any(), any(), any())
+    } thenReturn Future(DownstreamServerError)
   }
 }

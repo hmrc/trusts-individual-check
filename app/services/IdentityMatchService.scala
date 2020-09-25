@@ -18,53 +18,49 @@ package services
 
 import config.AppConfig
 import connectors.IdentityMatchConnector
-import exceptions.{InvalidIdMatchRequest, InvalidIdMatchResponse, LimitException}
+import exceptions.{InvalidIdMatchRequest, LimitException}
 import javax.inject.Inject
-import models.{BinaryResult, IdMatchError, IdMatchRequest, IdMatchResponse}
-import models.api1585.IdMatchApiResponseSuccess
+import models.api1585.{IdMatchApiError, IdMatchApiResponseSuccess, DownstreamServerError}
+import models.{BinaryResult, IdMatchRequest, IdMatchResponse}
+import play.api.Logging
 import repositories.IndividualCheckRepository
-import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
                                      val repository: IndividualCheckRepository,
-                                     val appConfig: AppConfig) {
+                                     val appConfig: AppConfig) extends Logging {
 
-
-  def matchId(request: IdMatchRequest)(implicit ec: ExecutionContext): Future[Either[IdMatchError, IdMatchResponse]] = {
+  def matchId(request: IdMatchRequest)(implicit ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] = {
 
     limitedMatch(request).recoverWith {
-      case e: InvalidIdMatchResponse => getErrorResponse(s"Something went wrong: $e")
-      case e: InvalidIdMatchRequest => getErrorResponse(s"Something went wrong: $e")
+      case _: InvalidIdMatchRequest =>
+        logger.warn(s"[IdMatchService] unable to send request, failed validation")
+        Future.successful(Left(DownstreamServerError))
     }
   }
 
   def clearCounter(id: String): Future[BinaryResult] =
     repository.clearCounter(id)
 
-  private def limitedMatch(request: IdMatchRequest)(implicit ec: ExecutionContext): Future[Either[IdMatchError, IdMatchResponse]] = {
+  private def limitedMatch(request: IdMatchRequest)(implicit ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] = {
 
     repository.getCounter(request.id).flatMap { count =>
       if (count >= appConfig.maxIdAttempts) {
         throw new LimitException(s"Individual check - retry limit reached (${appConfig.maxIdAttempts})")
       } else {
         connector.matchId(request.nino, request.surname, request.forename, request.birthDate).map {
-          case Right(IdMatchApiResponseSuccess(matched)) =>
+          case IdMatchApiResponseSuccess(matched) =>
             if(matched) {
               clearCounter(request.id)
             } else {
               repository.incrementCounter(request.id)
             }
             Right(IdMatchResponse(id = request.id, idMatch = matched))
-          case Left(_) =>
-            Left(IdMatchError(Seq("Something went wrong")))
+          case errorResponse: IdMatchApiError =>
+            Left(errorResponse)
         }
       }
     }
-  }
-
-  private def getErrorResponse(msg: String) = {
-    Future.successful(Left(IdMatchError(Seq(msg))))
   }
 }

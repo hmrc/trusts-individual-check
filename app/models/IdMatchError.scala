@@ -21,8 +21,6 @@ import play.api.libs.json.{Format, Json}
 final case class IdMatchError(errors: Seq[String])
 
 object IdMatchError {
-
   implicit val format: Format[IdMatchError] = Json.format[IdMatchError]
-
 }
 

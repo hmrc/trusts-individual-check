@@ -18,6 +18,7 @@ package services
 
 import connectors.IdentityMatchConnector
 import exceptions.LimitException
+import models.api1585.{IdMatchApiError, NinoNotFound, DownstreamServerError}
 import models.{IdMatchError, IdMatchResponse}
 import org.mockito.ArgumentMatchers.{eq => mockEq}
 import org.mockito.Mockito.{times, verify}
@@ -51,10 +52,10 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
           matched = true)
       }
 
-      "error is returned" in {
+      "nino is not found" in {
         shouldRespondWithSpecifiedError(
-          response = await(identityMatchService.matchId(errorRequest)),
-          error = "Something went wrong")
+          response = await(identityMatchService.matchId(notFoundRequest)),
+          error = NinoNotFound)
       }
 
       "maximum number of attempts is reached" in {
@@ -86,19 +87,19 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
     }
   }
 
-  def shouldRespondWithSpecifiedMatch(response: Either[IdMatchError, IdMatchResponse], matched: Boolean):Unit = {
+  def shouldRespondWithSpecifiedMatch(response: Either[IdMatchApiError, IdMatchResponse], matched: Boolean):Unit = {
     response match {
-      case Left(error) => fail(s"Should not return errors: ${error.errors.mkString(", ")}")
+      case Left(error) => fail(s"Should not return errors: ${error}")
       case Right(response) =>
         response.id mustBe idString
         response.idMatch mustBe matched
     }
   }
 
-  def shouldRespondWithSpecifiedError(response: Either[IdMatchError, IdMatchResponse], error: String):Unit = {
+  def shouldRespondWithSpecifiedError(response: Either[IdMatchApiError, IdMatchResponse], error: IdMatchApiError):Unit = {
     response match {
       case Right(_) => fail("Should return errors")
-      case Left(errors) => errors.errors.contains(error) mustBe true
+      case Left(errors) => errors mustBe error
     }
   }
 }

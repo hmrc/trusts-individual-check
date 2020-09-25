@@ -16,6 +16,7 @@
 
 package models
 
+import models.api1585.ErrorResponseDetail
 import play.api.libs.json.JsValue
 import org.scalatest.matchers.must.{Matchers => MustMatchers}
 import org.scalatest.wordspec.AnyWordSpec
@@ -29,7 +30,6 @@ class IdMatchResponseSpec extends AnyWordSpec  with MustMatchers{
 
   private val exampleErrorJson:String = """{"errors":["Something went wrong"]}"""
   private val exampleErrorObj:IdMatchError = IdMatchError(errors = Seq("Something went wrong"))
-
 
   "successful Response" should {
 
