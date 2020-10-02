@@ -16,14 +16,11 @@
 
 package repositories
 
-import config.AppConfig
 import javax.inject.Inject
 import models.{BinaryResult, IndividualCheckCount, OperationSucceeded}
 import play.api.libs.json.{JsObject, Json}
 import play.modules.reactivemongo.ReactiveMongoApi
-import reactivemongo.api.bson.BSONDocument
-import reactivemongo.api.bson.collection.BSONSerializationPack
-import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.api.WriteConcern
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import reactivemongo.play.json.collection.JSONCollection
 
@@ -31,7 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 // Tested in integration testing
 // $COVERAGE-OFF$
-class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, appConfig: AppConfig)(implicit ec: ExecutionContext) {
+class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi)(implicit ec: ExecutionContext) {
 
   val collectionName     : String = "individual-check-counters"
 
@@ -62,7 +59,14 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, appConfig: Ap
   def clearCounter(id: String): Future[BinaryResult] = {
     val selector = Json.obj("id" -> Json.toJson(id))
     collection.flatMap {
-      _.findAndRemove(selector).map(_ => OperationSucceeded)
+      _.findAndRemove(
+        selector = selector,
+        sort = None,
+        fields = None,
+        writeConcern = WriteConcern.Default,
+        maxTime = None,
+        collation = None,
+        arrayFilters = Nil).map(_ => OperationSucceeded)
     }
   }
 
@@ -76,7 +80,18 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, appConfig: Ap
     val modifier = Json.obj("$set" -> Json.obj("attempts" -> attempts))
 
     collection.flatMap {
-      _.findAndUpdate[JsObject, JsObject](selector, modifier, upsert = true)
+      _.findAndUpdate[JsObject, JsObject](
+        selector = selector,
+        update = modifier,
+        fetchNewObject = true,
+        upsert = true,
+        sort = None,
+        fields = None,
+        bypassDocumentValidation = false,
+        writeConcern = WriteConcern.Default,
+        maxTime = None,
+        collation = None,
+        arrayFilters = Nil)
         .map(_ => OperationSucceeded)
     }
   }
