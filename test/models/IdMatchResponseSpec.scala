@@ -16,11 +16,9 @@
 
 package models
 
-import models.api1585.ErrorResponseDetail
-import play.api.libs.json.JsValue
 import org.scalatest.matchers.must.{Matchers => MustMatchers}
 import org.scalatest.wordspec.AnyWordSpec
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 
 class IdMatchResponseSpec extends AnyWordSpec  with MustMatchers{
 
