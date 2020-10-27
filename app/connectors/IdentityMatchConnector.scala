@@ -59,7 +59,7 @@ class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppC
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headers(correlationId))
 
-    logger.info(s"[Session ID: ${Session.id(hc)}] Matching individual for correlationId: $correlationId")
+    logger.info(s"[matchId] Matching individual for correlationId: $correlationId")
 
     if(Json.toJson(request).validate[IdMatchApiRequest].isError) {
       throw new InvalidIdMatchRequest("Could not validate the request")

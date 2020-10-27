@@ -29,7 +29,7 @@ class CounterController @Inject()(service: IdentityMatchService,
                                   cc: ControllerComponents
                                  )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
-  def clearCounter(id: String): Action[AnyContent] = Action.async {
+  def clearCounter(id: String): Action[AnyContent] = Action.async { implicit request =>
       service.clearCounter(id) map {
         case OperationSucceeded => NoContent
         case OperationFailed => InternalServerError

@@ -42,20 +42,26 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
     }
   }
 
-  def clearCounter(id: String): Future[BinaryResult] =
+  def clearCounter(id: String)(implicit hc: HeaderCarrier): Future[BinaryResult] = {
+    logger.info(s"[Session ID: ${Session.id(hc)}] Lock cleared")
     repository.clearCounter(id)
+  }
 
-  private def limitedMatch(request: IdMatchRequest)(implicit ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] = {
+
+  private def limitedMatch(request: IdMatchRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] = {
 
     repository.getCounter(request.id).flatMap { count =>
       if (count >= appConfig.maxIdAttempts) {
+        logger.info(s"[Session ID: ${Session.id(hc)}] max attempts exceeded. Current count: $count")
         throw new LimitException(s"Individual check - retry limit reached (${appConfig.maxIdAttempts})")
       } else {
         connector.matchId(request.nino, request.surname, request.forename, request.birthDate).map {
           case IdMatchApiResponseSuccess(matched) =>
             if(matched) {
+              logger.info(s"[Session ID: ${Session.id(hc)}] Matched")
               clearCounter(request.id)
             } else {
+              logger.info(s"[Session ID: ${Session.id(hc)}] Not matched, increasing counter")
               repository.incrementCounter(request.id)
             }
             Right(IdMatchResponse(id = request.id, idMatch = matched))
