@@ -32,8 +32,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
 
-  implicit val headerCarrier: HeaderCarrier = mock[HeaderCarrier]
-
   override lazy val application = applicationBuilder()
     .overrides(bind[HttpClient].toInstance(httpClient))
     .overrides(bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository))

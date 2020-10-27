@@ -27,12 +27,13 @@ import play.api.Logger
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import utils.Session
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppConfig) {
 
-  private val logger = Logger("[IdentityMatchConnector]")
+  private val logger: Logger = Logger(getClass)
 
   private val postUrl = appConfig.idMatchEndpoint
 
@@ -58,7 +59,7 @@ class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppC
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headers(correlationId))
 
-    logger.info(s"Matching individual for correlationId: $correlationId")
+    logger.info(s"[matchId] Matching individual for correlationId: $correlationId")
 
     if(Json.toJson(request).validate[IdMatchApiRequest].isError) {
       throw new InvalidIdMatchRequest("Could not validate the request")

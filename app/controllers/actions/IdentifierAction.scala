@@ -28,6 +28,7 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.HeaderCarrierConverter
+import utils.Session
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,7 +36,7 @@ class AuthenticatedIdentifierAction @Inject()(override val authConnector: AuthCo
                                               val parser: BodyParsers.Default)
                                              (implicit val executionContext: ExecutionContext) extends IdentifierAction with AuthorisedFunctions {
 
-  private val logger = Logger("IdentifierAction")
+  private val logger: Logger = Logger(getClass)
 
   def invokeBlock[A](request: Request[A],
                      block: IdentifierRequest[A] => Future[Result]): Future[Result] = {
@@ -51,11 +52,11 @@ class AuthenticatedIdentifierAction @Inject()(override val authConnector: AuthCo
       case Some(internalId) ~ Some(Organisation) =>
         block(IdentifierRequest(request, internalId, Organisation))
       case _ =>
-        logger.info(s"[IdentifierAction] Insufficient enrolment")
+        logger.info(s"[Session ID: ${Session.id(hc)}] Insufficient enrolment")
         Future.successful(Unauthorized(Json.toJson(ErrorResponse("UNAUTHORISED", "Insufficient enrolment for authorised user."))))
     } recoverWith {
       case e : AuthorisationException =>
-        logger.info(s"[IdentifierAction] AuthorisationException: $e")
+        logger.info(s"[Session ID: ${Session.id(hc)}] AuthorisationException: $e")
         Future.successful(Unauthorized)
     }
   }
