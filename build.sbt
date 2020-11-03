@@ -6,23 +6,14 @@ import scoverage.ScoverageKeys
 
 val appName = "trusts-individual-check"
 
-val silencerVersion = "1.7.0"
-
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
   .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
   .settings(
-    majorVersion                     := 0,
-    scalaVersion                     := "2.12.12",
-    libraryDependencies              ++= AppDependencies.compile ++ AppDependencies.test,
-    // ***************
-    // Use the silencer plugin to suppress warnings
-    scalacOptions += "-P:silencer:pathFilters=routes",
-    libraryDependencies ++= Seq(
-      compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
-      "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
-    )
-    // ***************
+    majorVersion := 0,
+    scalaVersion := "2.12.12",
+    SilencerSettings(),
+    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
   )
   .settings(useSuperShell in ThisBuild := false)
   .settings(publishingSettings: _*)
