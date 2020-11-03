@@ -27,7 +27,6 @@ import play.api.Logger
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
-import utils.Session
 
 import scala.concurrent.{ExecutionContext, Future}
 

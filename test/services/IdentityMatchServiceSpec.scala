@@ -25,7 +25,7 @@ import org.mockito.Mockito.{times, verify}
 import play.api.inject.bind
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import repositories.IndividualCheckRepository
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import uk.gov.hmrc.http.HttpClient
 import util.{BaseSpec, IdentityMatchHelper}
 
 import scala.concurrent.ExecutionContext.Implicits.global
