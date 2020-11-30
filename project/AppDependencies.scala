@@ -9,7 +9,7 @@ object AppDependencies {
     "org.reactivemongo"       %% "play2-reactivemongo"              % "0.20.13-play27",
     "uk.gov.hmrc"             %% "domain"                           % "5.10.0-play-27",
     "com.amazonaws"           % "aws-java-sdk-s3"                   % "1.11.820",
-    "com.enragedginger"       %% "akka-quartz-scheduler"            % "1.8.4-akka-2.6.x",
+    "com.enragedginger"       %% "akka-quartz-scheduler"            % "1.8.5-akka-2.6.x",
     "uk.gov.hmrc"             %% "mongo-lock"                       % "6.23.0-play-27"
   )
 
