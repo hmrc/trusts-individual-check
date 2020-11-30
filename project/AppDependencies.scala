@@ -5,16 +5,16 @@ object AppDependencies {
 
   val compile = Seq(
     play.sbt.PlayImport.ws,
-    "uk.gov.hmrc"             %% "bootstrap-backend-play-27"        % "2.23.0",
-    "org.reactivemongo"       %% "play2-reactivemongo"              % "0.20.9-play27",
-    "uk.gov.hmrc"             %% "domain"                           % "5.9.0-play-27",
+    "uk.gov.hmrc"             %% "bootstrap-backend-play-27"        % "2.25.0",
+    "org.reactivemongo"       %% "play2-reactivemongo"              % "0.20.13-play27",
+    "uk.gov.hmrc"             %% "domain"                           % "5.10.0-play-27",
     "com.amazonaws"           % "aws-java-sdk-s3"                   % "1.11.820",
     "com.enragedginger"       %% "akka-quartz-scheduler"            % "1.8.4-akka-2.6.x",
-    "uk.gov.hmrc"             %% "mongo-lock"                       % "6.23.0-play-26"
+    "uk.gov.hmrc"             %% "mongo-lock"                       % "6.23.0-play-27"
   )
 
   val test = Seq(
-    "uk.gov.hmrc"             %% "bootstrap-test-play-27"   % "2.23.0",
+    "uk.gov.hmrc"             %% "bootstrap-test-play-27"   % "2.25.0",
     "org.scalatest"           %% "scalatest"                % "3.1.2",
     "com.typesafe.play"       %% "play-test"                % current,
     "com.vladsch.flexmark"    %  "flexmark-all"             % "0.35.10",

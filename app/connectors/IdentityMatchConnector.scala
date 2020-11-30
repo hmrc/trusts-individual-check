@@ -23,16 +23,14 @@ import exceptions.InvalidIdMatchRequest
 import javax.inject.Inject
 import models.api1585.IdMatchApiHttpReads.httpReads
 import models.api1585.{IdMatchApiRequest, IdMatchApiResponse}
-import play.api.Logger
+import play.api.Logging
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppConfig) {
-
-  private val logger: Logger = Logger(getClass)
+class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppConfig) extends Logging {
 
   private val postUrl = appConfig.idMatchEndpoint
 
