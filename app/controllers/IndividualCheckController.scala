@@ -20,11 +20,14 @@ import controllers.actions.IdentifierAction
 import exceptions.{InvalidIdMatchRequest, LimitException}
 import javax.inject.{Inject, Singleton}
 import models.api1585._
-import models.{IdMatchRequest, IdMatchResponse, IdMatchError}
+import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
+import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.{Action, ControllerComponents, Request, Result}
 import services.IdentityMatchService
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import utils.Session
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,6 +36,8 @@ class IndividualCheckController @Inject()(service: IdentityMatchService,
                                           cc: ControllerComponents,
                                           identify: IdentifierAction
                                          )(implicit ec: ExecutionContext) extends BackendController(cc) {
+
+  private val logger: Logger = Logger(getClass)
 
   def individualCheck(): Action[JsValue] = identify.async(parse.json) {
     implicit request =>
@@ -44,10 +49,12 @@ class IndividualCheckController @Inject()(service: IdentityMatchService,
       }
   }
 
-  private def validateRequest(request: Request[JsValue]): IdMatchRequest = {
+  private def validateRequest(request: Request[JsValue])(implicit hc: HeaderCarrier): IdMatchRequest = {
     request.body.validate[IdMatchRequest] match {
       case JsSuccess(idRequest, _) => idRequest
-      case JsError(_) => throw new InvalidIdMatchRequest("Could not validate the request")
+      case JsError(errors) =>
+        logger.error(s"[Session ID: ${Session.id(hc)}][Unable to validate payload due to ${JsError.toJson(errors)}]")
+        throw new InvalidIdMatchRequest(s"Could not validate the request")
     }
   }
 

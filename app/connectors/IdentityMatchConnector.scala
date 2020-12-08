@@ -25,8 +25,9 @@ import models.api1585.IdMatchApiHttpReads.httpReads
 import models.api1585.{IdMatchApiRequest, IdMatchApiResponse}
 import play.api.Logging
 import play.api.http.HeaderNames
-import play.api.libs.json.Json
+import play.api.libs.json.{JsError, JsSuccess, Json}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import utils.Session
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -56,12 +57,15 @@ class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppC
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headers(correlationId))
 
-    logger.info(s"[matchId] Matching individual for correlationId: $correlationId")
+    logger.info(s"[Session ID: ${Session.id(hc)}] Matching individual for correlationId: $correlationId")
 
-    if(Json.toJson(request).validate[IdMatchApiRequest].isError) {
-      throw new InvalidIdMatchRequest("Could not validate the request")
+    Json.toJson(request).validate[IdMatchApiRequest] match {
+      case JsSuccess(_, _) =>
+        http.POST[IdMatchApiRequest, IdMatchApiResponse](postUrl, request)
+      case JsError(errors) =>
+        logger.error(s"[Session ID: ${Session.id(hc)}] Unable to transform request for IFS due to ${JsError.toJson(errors)} for correlationId: $correlationId")
+        throw new InvalidIdMatchRequest("Could not validate the request")
     }
 
-    http.POST[IdMatchApiRequest, IdMatchApiResponse](postUrl, request)
   }
 }
