@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package models.api1585
+package models.auditing
 
-import play.api.libs.json.{Format, Json}
+object TrustAuditing {
 
-final case class ErrorResponseDetail(code: String, reason: String)
-
-object ErrorResponseDetail {
-
-  implicit lazy val format: Format[ErrorResponseDetail] = Json.format[ErrorResponseDetail]
+  val LEAD_TRUSTEE_IDENTITY_MATCH_ATTEMPT_EXCEEDED = "LeadTrusteeIdentityMatchAttemptExceeded"
+  val LEAD_TRUSTEE_IDENTITY_MATCH_ATTEMPT = "LeadTrusteeIdentityMatchAttempt"
+  val LEAD_TRUSTEE_IDENTITY_MATCHED = "LeadTrusteeIdentityMatched"
 
 }
-
-
-

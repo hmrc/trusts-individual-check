@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package models.api1585
+package models.auditing
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{Format, JsValue, Json}
 
-final case class ErrorResponseDetail(code: String, reason: String)
+case class GetTrustAuditEvent(request: JsValue,
+                               internalId : String,
+                               response: JsValue
+                             )
 
-object ErrorResponseDetail {
+object GetTrustAuditEvent {
 
-  implicit lazy val format: Format[ErrorResponseDetail] = Json.format[ErrorResponseDetail]
+  implicit val formats: Format[GetTrustAuditEvent] = Json.format[GetTrustAuditEvent]
 
 }
-
-
-
