@@ -45,14 +45,20 @@ class AuditService @Inject()(auditConnector: AuditConnector){
   }
 
   def auditIdentityMatchAttempt(idMatchRequest: IdMatchRequest,
-                              count: Int
-                             )(implicit hc: HeaderCarrier): Unit = {
+                                count: Int,
+                                idMatchResponse: Boolean
+                               )(implicit hc: HeaderCarrier): Unit = {
 
     val request = Json.obj(
       "forename" -> idMatchRequest.forename,
       "surname" -> idMatchRequest.surname,
       "dateOfBirth" -> idMatchRequest.birthDate,
-      "nino" -> idMatchRequest.nino,
+      "nino" -> idMatchRequest.nino
+    )
+
+    val response = Json.obj(
+      "response" -> idMatchResponse,
+      "responseMsg" -> "Match attempt.",
       "countOfTheAttempt" -> count,
       "isLocked" -> false
     )
@@ -61,19 +67,25 @@ class AuditService @Inject()(auditConnector: AuditConnector){
       event = TrustAuditing.LEAD_TRUSTEE_IDENTITY_MATCH_ATTEMPT,
       request = request,
       internalId = idMatchRequest.id,
-      response = Json.obj("response" -> "Match attempt.")
+      response = response
     )
   }
 
   def auditIdentityMatched(idMatchRequest: IdMatchRequest,
-                              count: Int
-                             )(implicit hc: HeaderCarrier): Unit = {
+                           count: Int,
+                           idMatchResponse: Boolean
+                          )(implicit hc: HeaderCarrier): Unit = {
 
     val request = Json.obj(
       "forename" -> idMatchRequest.forename,
       "surname" -> idMatchRequest.surname,
       "dateOfBirth" -> idMatchRequest.birthDate,
-      "nino" -> idMatchRequest.nino,
+      "nino" -> idMatchRequest.nino
+    )
+
+    val response = Json.obj(
+      "response" -> idMatchResponse,
+      "responseMsg" -> "Matched.",
       "countOfTheAttempt" -> count,
       "isLocked" -> false
     )
@@ -82,19 +94,25 @@ class AuditService @Inject()(auditConnector: AuditConnector){
       event = TrustAuditing.LEAD_TRUSTEE_IDENTITY_MATCHED,
       request = request,
       internalId = idMatchRequest.id,
-      response = Json.obj("response" -> "Matched.")
+      response = response
     )
   }
 
   def auditIdentityMatchExceeded(idMatchRequest: IdMatchRequest,
-                              count: Int
-                             )(implicit hc: HeaderCarrier): Unit = {
+                                 count: Int,
+                                 idMatchResponse: Boolean
+                                )(implicit hc: HeaderCarrier): Unit = {
 
     val request = Json.obj(
       "forename" -> idMatchRequest.forename,
       "surname" -> idMatchRequest.surname,
       "dateOfBirth" -> idMatchRequest.birthDate,
-      "nino" -> idMatchRequest.nino,
+      "nino" -> idMatchRequest.nino
+    )
+
+    val response = Json.obj(
+      "response" -> idMatchResponse,
+      "responseMsg" -> "Max attempts exceeded.",
       "countOfTheAttempt" -> count,
       "isLocked" -> true
     )
@@ -103,8 +121,36 @@ class AuditService @Inject()(auditConnector: AuditConnector){
       event = TrustAuditing.LEAD_TRUSTEE_IDENTITY_MATCH_ATTEMPT_EXCEEDED,
       request = request,
       internalId = idMatchRequest.id,
-      response = Json.obj("response" -> "Max attempts exceeded.")
+      response = response
     )
   }
+
+  def auditIdentityMatchApiError(idMatchRequest: IdMatchRequest,
+                                count: Int,
+                                idMatchResponse: Boolean
+                               )(implicit hc: HeaderCarrier): Unit = {
+
+    val request = Json.obj(
+      "forename" -> idMatchRequest.forename,
+      "surname" -> idMatchRequest.surname,
+      "dateOfBirth" -> idMatchRequest.birthDate,
+      "nino" -> idMatchRequest.nino
+    )
+
+    val response = Json.obj(
+      "response" -> idMatchResponse,
+      "responseMsg" -> "Identity match api error.",
+      "countOfTheAttempt" -> count,
+      "isLocked" -> false
+    )
+
+    audit(
+      event = TrustAuditing.LEAD_TRUSTEE_IDENTITY_MATCH_API_ERROR,
+      request = request,
+      internalId = idMatchRequest.id,
+      response = response
+    )
+  }
+
 
 }

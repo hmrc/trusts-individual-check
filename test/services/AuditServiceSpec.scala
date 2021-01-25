@@ -45,21 +45,25 @@ class AuditServiceSpec extends BaseSpec {
         "forename" -> "forename",
         "surname" -> "surname",
         "dateOfBirth" -> "01/01/1970",
-        "nino" -> "NH111111A",
+        "nino" -> "NH111111A"
+      )
+
+      val response = Json.obj(
+        "response" -> true,
+        "responseMsg" -> "Matched.",
         "countOfTheAttempt" -> 1,
         "isLocked" -> false
       )
 
-      val response = "Matched."
-
       service.auditIdentityMatched(
         idMatchRequest,
-        1)
+        1,
+        true)
 
       val expectedAuditData = GetTrustAuditEvent(
         request,
         "id",
-        Json.obj("response" -> response)
+        response
       )
 
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
@@ -85,21 +89,25 @@ class AuditServiceSpec extends BaseSpec {
         "forename" -> "forename",
         "surname" -> "surname",
         "dateOfBirth" -> "01/01/1970",
-        "nino" -> "NH111111A",
+        "nino" -> "NH111111A"
+      )
+
+      val response = Json.obj(
+        "response" -> true,
+        "responseMsg" -> "Match attempt.",
         "countOfTheAttempt" -> 1,
         "isLocked" -> false
       )
 
-      val response = "Match attempt."
-
       service.auditIdentityMatchAttempt(
         idMatchRequest,
-        1)
+        1,
+        true)
 
       val expectedAuditData = GetTrustAuditEvent(
         request,
         "id",
-        Json.obj("response" -> response)
+        response
       )
 
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
@@ -125,25 +133,74 @@ class AuditServiceSpec extends BaseSpec {
         "forename" -> "forename",
         "surname" -> "surname",
         "dateOfBirth" -> "01/01/1970",
-        "nino" -> "NH111111A",
+        "nino" -> "NH111111A"
+      )
+
+      val response = Json.obj(
+        "response" -> true,
+        "responseMsg" -> "Max attempts exceeded.",
         "countOfTheAttempt" -> 4,
         "isLocked" -> true
       )
 
-      val response = "Max attempts exceeded."
-
       service.auditIdentityMatchExceeded(
         idMatchRequest,
-        4)
+        4,
+        true)
 
       val expectedAuditData = GetTrustAuditEvent(
         request,
         "id",
-        Json.obj("response" -> response)
+        response
       )
 
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
         equalTo("LeadTrusteeIdentityMatchAttemptExceeded"),
+        equalTo(expectedAuditData))(any(), any(), any())
+
+    }
+
+
+    "send event when match API error" in {
+
+      val connector = mock[AuditConnector]
+      val service = new AuditService(connector)
+
+      val idMatchRequest = IdMatchRequest(
+        id = "id",
+        nino = "NH111111A",
+        surname = "surname",
+        forename = "forename",
+        birthDate = "01/01/1970"
+      )
+
+      val request = Json.obj(
+        "forename" -> "forename",
+        "surname" -> "surname",
+        "dateOfBirth" -> "01/01/1970",
+        "nino" -> "NH111111A"
+      )
+
+      val response = Json.obj(
+        "response" -> false,
+        "responseMsg" -> "Identity match api error.",
+        "countOfTheAttempt" -> 1,
+        "isLocked" -> false
+      )
+
+      service.auditIdentityMatchApiError(
+        idMatchRequest,
+        1,
+        false)
+
+      val expectedAuditData = GetTrustAuditEvent(
+        request,
+        "id",
+        response
+      )
+
+      verify(connector).sendExplicitAudit[GetTrustAuditEvent](
+        equalTo("LeadTrusteeIdentityMatchApiError"),
         equalTo(expectedAuditData))(any(), any(), any())
 
     }

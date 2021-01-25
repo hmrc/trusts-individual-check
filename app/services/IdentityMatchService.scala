@@ -56,7 +56,8 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
         logger.info(s"[Session ID: ${Session.id(hc)}] max attempts exceeded. Current count: $count")
         auditService.auditIdentityMatchExceeded(
           idMatchRequest = request,
-          count = count
+          count = count,
+          idMatchResponse = false
         )
         throw new LimitException(s"Individual check - retry limit reached (${appConfig.maxIdAttempts})")
       } else {
@@ -66,19 +67,26 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
               logger.info(s"[Session ID: ${Session.id(hc)}] Matched")
               auditService.auditIdentityMatched(
                 idMatchRequest = request,
-                count = count
+                count = count,
+                idMatchResponse = true
               )
               clearCounter(request.id)
             } else {
               logger.info(s"[Session ID: ${Session.id(hc)}] Not matched, increasing counter")
               auditService.auditIdentityMatchAttempt(
                 idMatchRequest = request,
-                count = count
+                count = count,
+                idMatchResponse = true
               )
               repository.incrementCounter(request.id)
             }
             Right(IdMatchResponse(id = request.id, idMatch = matched))
           case errorResponse: IdMatchApiError =>
+            auditService.auditIdentityMatchApiError(
+              idMatchRequest = request,
+              count = count,
+              idMatchResponse = false
+            )
             Left(errorResponse)
         }
       }
