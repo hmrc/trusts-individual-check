@@ -76,7 +76,7 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
               auditService.auditIdentityMatchAttempt(
                 idMatchRequest = request,
                 count = count,
-                idMatchResponse = true
+                idMatchResponse = false
               )
               repository.incrementCounter(request.id)
             }
@@ -85,7 +85,7 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
             auditService.auditIdentityMatchApiError(
               idMatchRequest = request,
               count = count,
-              idMatchResponse = false
+              idMatchResponse = errorResponse.toString
             )
             Left(errorResponse)
         }

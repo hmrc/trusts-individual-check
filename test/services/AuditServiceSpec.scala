@@ -93,7 +93,7 @@ class AuditServiceSpec extends BaseSpec {
       )
 
       val response = Json.obj(
-        "response" -> true,
+        "response" -> false,
         "responseMsg" -> "Match attempt.",
         "countOfTheAttempt" -> 1,
         "isLocked" -> false
@@ -102,7 +102,7 @@ class AuditServiceSpec extends BaseSpec {
       service.auditIdentityMatchAttempt(
         idMatchRequest,
         1,
-        true)
+        false)
 
       val expectedAuditData = GetTrustAuditEvent(
         request,
@@ -182,7 +182,7 @@ class AuditServiceSpec extends BaseSpec {
       )
 
       val response = Json.obj(
-        "response" -> false,
+        "response" -> "ErrorResponse",
         "responseMsg" -> "Identity match api error.",
         "countOfTheAttempt" -> 1,
         "isLocked" -> false
@@ -191,7 +191,7 @@ class AuditServiceSpec extends BaseSpec {
       service.auditIdentityMatchApiError(
         idMatchRequest,
         1,
-        false)
+        "ErrorResponse")
 
       val expectedAuditData = GetTrustAuditEvent(
         request,

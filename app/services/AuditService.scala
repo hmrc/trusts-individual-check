@@ -127,7 +127,7 @@ class AuditService @Inject()(auditConnector: AuditConnector){
 
   def auditIdentityMatchApiError(idMatchRequest: IdMatchRequest,
                                 count: Int,
-                                idMatchResponse: Boolean
+                                idMatchResponse: String
                                )(implicit hc: HeaderCarrier): Unit = {
 
     val request = Json.obj(
