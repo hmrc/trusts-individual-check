@@ -26,6 +26,8 @@ import util.BaseSpec
 
 class AuditServiceSpec extends BaseSpec {
 
+  val sessionId = "XXX1234567890"
+
   "auditIdentityMatchError" should {
 
     "send event when matched" in {
@@ -49,16 +51,18 @@ class AuditServiceSpec extends BaseSpec {
       )
 
       val response = Json.obj(
-        "response" -> true,
+        "response" -> "Match",
         "responseMsg" -> "Matched.",
         "countOfTheAttempt" -> 1,
-        "isLocked" -> false
+        "isLocked" -> false,
+        "sessionId" -> sessionId
       )
 
       service.auditIdentityMatched(
         idMatchRequest,
         1,
-        true)
+        "Match",
+        sessionId)
 
       val expectedAuditData = GetTrustAuditEvent(
         request,
@@ -93,16 +97,18 @@ class AuditServiceSpec extends BaseSpec {
       )
 
       val response = Json.obj(
-        "response" -> false,
+        "response" -> "NotMatched",
         "responseMsg" -> "Match attempt.",
         "countOfTheAttempt" -> 1,
-        "isLocked" -> false
+        "isLocked" -> false,
+        "sessionId" -> sessionId
       )
 
       service.auditIdentityMatchAttempt(
         idMatchRequest,
         1,
-        false)
+        "NotMatched",
+        sessionId)
 
       val expectedAuditData = GetTrustAuditEvent(
         request,
@@ -137,16 +143,18 @@ class AuditServiceSpec extends BaseSpec {
       )
 
       val response = Json.obj(
-        "response" -> true,
+        "response" -> "NotMatched",
         "responseMsg" -> "Max attempts exceeded.",
         "countOfTheAttempt" -> 4,
-        "isLocked" -> true
+        "isLocked" -> true,
+        "sessionId" -> sessionId
       )
 
       service.auditIdentityMatchExceeded(
         idMatchRequest,
         4,
-        true)
+        "NotMatched",
+        sessionId)
 
       val expectedAuditData = GetTrustAuditEvent(
         request,
@@ -185,13 +193,15 @@ class AuditServiceSpec extends BaseSpec {
         "response" -> "ErrorResponse",
         "responseMsg" -> "Identity match api error.",
         "countOfTheAttempt" -> 1,
-        "isLocked" -> false
+        "isLocked" -> false,
+        "sessionId" -> sessionId
       )
 
       service.auditIdentityMatchApiError(
         idMatchRequest,
         1,
-        "ErrorResponse")
+        "ErrorResponse",
+        sessionId)
 
       val expectedAuditData = GetTrustAuditEvent(
         request,
