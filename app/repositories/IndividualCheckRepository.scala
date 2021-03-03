@@ -21,7 +21,7 @@ import models.{BinaryResult, IndividualCheckCount, OperationSucceeded}
 import play.api.libs.json.{JsObject, Json}
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.WriteConcern
-import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
+import reactivemongo.play.json.collection.Helpers.idWrites
 import reactivemongo.play.json.collection.JSONCollection
 import reactivemongo.api.indexes.IndexType
 import play.api.Configuration
