@@ -23,27 +23,47 @@ import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.WriteConcern
 import reactivemongo.play.json.ImplicitBSONHandlers.JsObjectDocumentWriter
 import reactivemongo.play.json.collection.JSONCollection
+import reactivemongo.api.indexes.IndexType
+import play.api.Configuration
+
+import java.sql.Timestamp
+import java.time.LocalDateTime
 
 import scala.concurrent.{ExecutionContext, Future}
 
 // Tested in integration testing
 // $COVERAGE-OFF$
-class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi)(implicit ec: ExecutionContext) {
+class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, config: Configuration)(implicit ec: ExecutionContext)  {
 
   val collectionName     : String = "individual-check-counters"
+
+  private val expireAfterSeconds = config.get[Int]("mongodb.ttl")
+
+  private val lastUpdatedIndex = MongoIndex(
+    key = Seq("lastUpdated" -> IndexType.Ascending),
+    name = "last-updated-index",
+    expireAfterSeconds = Some(expireAfterSeconds),
+    unique = false
+  )
 
   private def collection : Future[JSONCollection] = for {
       _ <- ensureIndexes
       res <- mongo.database.map(_.collection[JSONCollection](collectionName))
     } yield res
 
-  private lazy val idIndex = MongoIndex("id", "id-index", unique = true)
+  private lazy val idIndex = MongoIndex(
+    key = Seq("id" -> IndexType.Ascending),
+    name = "id-index",
+    unique = true
+  )
 
-  private lazy val ensureIndexes = {
+  private def ensureIndexes = {
     for {
-      collection              <- mongo.database.map(_.collection[JSONCollection](collectionName))
-      createdIdIndex          <- collection.indexesManager.ensure(idIndex)
-    } yield createdIdIndex
+      collection                           <- mongo.database.map(_.collection[JSONCollection](collectionName))
+      createdLastUpdatedIndex              <- collection.indexesManager.ensure(lastUpdatedIndex)
+      createdIdIndex                       <- collection.indexesManager.ensure(idIndex)
+
+    } yield createdLastUpdatedIndex && createdIdIndex
   }
 
   def getCounter(id: String): Future[Int] = {
@@ -77,7 +97,14 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi)(implicit ec: 
   def setCounter(id: String, attempts: Int): Future[BinaryResult] = {
 
     val selector = Json.obj("id" -> Json.toJson(id))
-    val modifier = Json.obj("$set" -> Json.obj("attempts" -> attempts))
+    val modifier = Json.obj(
+      "$set" -> Json.obj(
+        "attempts" -> attempts,
+            "lastUpdated" -> Json.obj(
+              "$date" -> Timestamp.valueOf(LocalDateTime.now)
+          )
+        )
+      )
 
     collection.flatMap {
       _.findAndUpdate[JsObject, JsObject](
