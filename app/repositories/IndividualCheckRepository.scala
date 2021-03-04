@@ -25,14 +25,13 @@ import reactivemongo.play.json.collection.Helpers.idWrites
 import reactivemongo.play.json.collection.JSONCollection
 import reactivemongo.api.indexes.IndexType
 import play.api.Configuration
-import java.sql.Timestamp
 import java.time.LocalDateTime
 
 import scala.concurrent.{ExecutionContext, Future}
 
 // Tested in integration testing
 // $COVERAGE-OFF$
-class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, config: Configuration)(implicit ec: ExecutionContext) extends MongoDateTimeFormats {
+class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, config: Configuration)(implicit ec: ExecutionContext) {
 
   val collectionName     : String = "individual-check-counters"
 
@@ -99,9 +98,7 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, config: Confi
     val modifier = Json.obj(
       "$set" -> Json.obj(
         "attempts" -> attempts,
-            "lastUpdated" -> Json.obj(
-              "$date" -> Timestamp.valueOf(LocalDateTime.now)
-          )
+        "lastUpdated" -> Json.toJson(LocalDateTime.now)(MongoDateTimeFormats.localDateTimeWrite)
         )
       )
 
