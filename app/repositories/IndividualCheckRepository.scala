@@ -17,7 +17,7 @@
 package repositories
 
 import javax.inject.Inject
-import models.{BinaryResult, IndividualCheckCount, OperationSucceeded}
+import models.{BinaryResult, IndividualCheckCount, MongoDateTimeFormats, OperationSucceeded}
 import play.api.libs.json.{JsObject, Json}
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.WriteConcern
@@ -25,7 +25,6 @@ import reactivemongo.play.json.collection.Helpers.idWrites
 import reactivemongo.play.json.collection.JSONCollection
 import reactivemongo.api.indexes.IndexType
 import play.api.Configuration
-
 import java.sql.Timestamp
 import java.time.LocalDateTime
 
@@ -33,7 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 // Tested in integration testing
 // $COVERAGE-OFF$
-class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, config: Configuration)(implicit ec: ExecutionContext)  {
+class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, config: Configuration)(implicit ec: ExecutionContext) extends MongoDateTimeFormats {
 
   val collectionName     : String = "individual-check-counters"
 
