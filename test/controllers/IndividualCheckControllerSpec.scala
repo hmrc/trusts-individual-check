@@ -32,122 +32,145 @@ import util.{BaseSpec, IdentityMatchHelper}
 
 import scala.concurrent.Future
 
-
 class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout with Matchers {
 
   private val service = mock[IdentityMatchService]
 
+  private val id = "ID"
+
   when(service.matchId(any())(any(), any()))
-    .thenReturn(Future.successful(Right(IdMatchResponse("ID", true))))
+    .thenReturn(Future.successful(Right(IdMatchResponse(id, idMatch = true))))
 
   override lazy val app: Application = applicationBuilder()
     .overrides(bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository))
     .overrides(bind[HttpClient].toInstance(httpClient)).build()
 
-  "IndividualCheckController" should {
+  "IndividualCheckController" when {
 
-    "return a response to a valid request" in {
+    ".individualCheck" should {
 
-      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-        .withJsonBody(Json.toJson(successRequest))
+      "return a response to a valid request" in {
 
-      val result = route(app, request).get
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+          .withJsonBody(Json.toJson(successRequest))
 
-      status(result) mustBe OK
+        val result = route(app, request).get
 
-      contentAsJson(result) mustBe Json.toJson(successResponse)
+        status(result) mustBe OK
+
+        contentAsJson(result) mustBe Json.toJson(successResponse)
+      }
+
+      "return a response to an invalid request" in {
+
+        val requestWithInvalidNino = IdMatchRequest(id = idString, nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
+
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+          .withJsonBody(Json.toJson(requestWithInvalidNino))
+
+        val result = route(app, request).get
+
+        status(result) mustBe BAD_REQUEST
+
+        contentAsJson(result) mustBe Json.toJson(Json.parse(
+          """
+            |{
+            | "errors": [
+            |   "Could not validate the request"
+            | ]
+            |}""".stripMargin))
+      }
+
+      "return not found if the API is unable to locate the nino" in {
+
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+          .withJsonBody(Json.toJson(notFoundRequest))
+
+        val result = route(app, request).get
+
+        status(result) mustBe NOT_FOUND
+
+        contentAsJson(result) mustBe Json.toJson(Json.parse(
+          """
+            |{
+            | "errors": [
+            |   "Dependent service indicated that no data can be found"
+            | ]
+            |}""".stripMargin))
+      }
+
+      "return a service unavailable if API sends 503" in {
+
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+          .withJsonBody(Json.toJson(serviceUnavailableRequest))
+
+        val result = route(app, request).get
+
+        status(result) mustBe SERVICE_UNAVAILABLE
+
+        contentAsJson(result) mustBe Json.toJson(Json.parse(
+          """
+            |{
+            | "errors": [
+            |   "Dependent service is unavailable"
+            | ]
+            |}""".stripMargin))
+      }
+
+      "return a internal server error if API sends 500" in {
+
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+          .withJsonBody(Json.toJson(internalServerErrorRequest))
+
+        val result = route(app, request).get
+
+        status(result) mustBe INTERNAL_SERVER_ERROR
+
+        contentAsJson(result) mustBe Json.toJson(Json.parse(
+          """
+            |{
+            | "errors": [
+            |   "IF is currently experiencing problems that require live service intervention"
+            | ]
+            |}""".stripMargin))
+      }
+
+      "return a specific response if API limit is reached" in {
+
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+          .withJsonBody(Json.toJson(maxAttemptsRequest))
+
+        val result = route(app, request).get
+
+        status(result) mustBe FORBIDDEN
+
+        contentAsJson(result) mustBe Json.toJson(Json.parse(
+          """
+            |{
+            | "errors": [
+            |   "Individual check - retry limit reached (3)"
+            | ]
+            |}""".stripMargin))
+      }
     }
 
-    "return a response to an invalid request" in {
+    ".failedAttempts" should {
 
-      val requestWithInvalidNino = IdMatchRequest(id = idString, nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
+      "return current failed attempt count for given id" in {
 
-      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-        .withJsonBody(Json.toJson(requestWithInvalidNino))
+        val numberOfFailedAttempts: Int = 1
 
-      val result = route(app, request).get
+        when(mockIndividualCheckRepository.getCounter(any()))
+          .thenReturn(Future.successful(numberOfFailedAttempts))
 
-      status(result) mustBe BAD_REQUEST
+        val request = FakeRequest(GET, routes.IndividualCheckController.failedAttempts(id).url)
 
-      contentAsJson(result) mustBe Json.toJson(Json.parse(
-        """
-          |{
-          | "errors": [
-          |   "Could not validate the request"
-          | ]
-          |}""".stripMargin))
-    }
+        val result = route(app, request).get
 
-    "return not found if the API is unable to locate the nino" in {
+        status(result) mustBe OK
 
-      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-        .withJsonBody(Json.toJson(notFoundRequest))
-
-      val result = route(app, request).get
-
-      status(result) mustBe NOT_FOUND
-
-      contentAsJson(result) mustBe Json.toJson(Json.parse(
-        """
-          |{
-          | "errors": [
-          |   "Dependent service indicated that no data can be found"
-          | ]
-          |}""".stripMargin))
-    }
-
-    "return a service unavailable if API sends 503" in {
-
-      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-        .withJsonBody(Json.toJson(serviceUnavailableRequest))
-
-      val result = route(app, request).get
-
-      status(result) mustBe SERVICE_UNAVAILABLE
-
-      contentAsJson(result) mustBe Json.toJson(Json.parse(
-        """
-          |{
-          | "errors": [
-          |   "Dependent service is unavailable"
-          | ]
-          |}""".stripMargin))
-    }
-
-    "return a internal server error if API sends 500" in {
-
-      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-        .withJsonBody(Json.toJson(internalServerErrorRequest))
-
-      val result = route(app, request).get
-
-      status(result) mustBe INTERNAL_SERVER_ERROR
-
-      contentAsJson(result) mustBe Json.toJson(Json.parse(
-        """
-          |{
-          | "errors": [
-          |   "IF is currently experiencing problems that require live service intervention"
-          | ]
-          |}""".stripMargin))
-    }
-
-    "return a specific response if API limit is reached" in {
-
-      val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-        .withJsonBody(Json.toJson(maxAttemptsRequest))
-
-      val result = route(app, request).get
-
-      status(result) mustBe FORBIDDEN
-
-      contentAsJson(result) mustBe Json.toJson(Json.parse(
-        """
-          |{
-          | "errors": [
-          |   "Individual check - retry limit reached (3)"
-          | ]
-          |}""".stripMargin))
+        contentAsJson(result) mustBe Json.toJson(numberOfFailedAttempts)
+      }
     }
   }
 }

@@ -48,10 +48,13 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
     repository.clearCounter(id)
   }
 
+  def getCounter(id: String): Future[Int] = {
+    repository.getCounter(id)
+  }
 
   private def limitedMatch(request: IdMatchRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] = {
 
-    repository.getCounter(request.id).flatMap { count =>
+    getCounter(request.id).flatMap { count =>
       if (count >= appConfig.maxIdAttempts) {
         logger.info(s"[Session ID: ${Session.id(hc)}] max attempts exceeded. Current count: $count")
         auditService.auditIdentityMatchExceeded(

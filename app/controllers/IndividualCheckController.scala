@@ -22,7 +22,7 @@ import models.api1585._
 import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
 import play.api.Logging
 import play.api.libs.json._
-import play.api.mvc.{Action, ControllerComponents, Request, Result}
+import play.api.mvc.{Action, AnyContent, ControllerComponents, Request, Result}
 import services.IdentityMatchService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -78,5 +78,11 @@ class IndividualCheckController @Inject()(service: IdentityMatchService,
 
   private def getError(msg: String): JsValue = {
     Json.toJson(IdMatchError(Seq(msg)))
+  }
+
+  def failedAttempts(id: String): Action[AnyContent] = identify.async {
+    service.getCounter(id) map { count =>
+      Ok(Json.toJson(count))
+    }
   }
 }
