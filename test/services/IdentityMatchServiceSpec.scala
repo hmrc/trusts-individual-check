@@ -63,6 +63,29 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
       }
     }
 
+    "increment counter" when {
+
+      "not matched" in {
+
+        shouldRespondWithSpecifiedMatch(
+          response = await(identityMatchService.matchId(failureRequest)),
+          matched = false
+        )
+
+        verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
+      }
+
+      "nino not found" in {
+
+        shouldRespondWithSpecifiedError(
+          response = await(identityMatchService.matchId(notFoundRequest)),
+          error = NinoNotFound
+        )
+
+        verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
+      }
+    }
+
     "reset the counter on success" in {
 
       shouldRespondWithSpecifiedMatch(

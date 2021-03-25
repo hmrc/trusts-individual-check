@@ -19,14 +19,14 @@ package services
 import config.AppConfig
 import connectors.IdentityMatchConnector
 import exceptions.{InvalidIdMatchRequest, LimitException}
-import javax.inject.Inject
-import models.api1585.{DownstreamServerError, IdMatchApiError, IdMatchApiResponseSuccess}
+import models.api1585.{DownstreamServerError, IdMatchApiError, IdMatchApiResponseSuccess, NinoNotFound}
 import models.{BinaryResult, IdMatchRequest, IdMatchResponse}
 import play.api.Logging
 import repositories.IndividualCheckRepository
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.Session
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
@@ -90,6 +90,10 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
               count = count,
               idMatchResponse = errorResponse.toString
             )
+            errorResponse match {
+              case NinoNotFound => repository.incrementCounter(request.id)
+              case _ => ()
+            }
             Left(errorResponse)
         }
       }
