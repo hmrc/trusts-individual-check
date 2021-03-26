@@ -16,8 +16,8 @@
 
 package util
 
-import models.{IdMatchRequest, IdMatchResponse}
-import models.api1585.{DownstreamServiceUnavailable, IdMatchApiRequest, IdMatchApiResponse, IdMatchApiResponseSuccess, NinoNotFound, DownstreamServerError}
+import models.{IdMatchRequest, IdMatchResponse, OperationSucceeded}
+import models.api1585.{DownstreamServerError, DownstreamServiceUnavailable, IdMatchApiRequest, IdMatchApiResponse, IdMatchApiResponseSuccess, NinoNotFound}
 import org.mockito.Mockito.{reset, when}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsValue, Json}
@@ -113,6 +113,14 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
     when {
       mockIndividualCheckRepository.getCounter(maxAttemptsIdString)
     } thenReturn Future.successful(3)
+
+    when {
+      mockIndividualCheckRepository.incrementCounter(any())
+    } thenReturn Future.successful(OperationSucceeded)
+
+    when {
+      mockIndividualCheckRepository.clearCounter(any())
+    } thenReturn Future.successful(OperationSucceeded)
 
     when {
       httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(successApiRequest), any())(any(), any(), any(), any())

@@ -19,14 +19,14 @@ package services
 import config.AppConfig
 import connectors.IdentityMatchConnector
 import exceptions.{InvalidIdMatchRequest, LimitException}
-import javax.inject.Inject
-import models.api1585.{DownstreamServerError, IdMatchApiError, IdMatchApiResponseSuccess}
-import models.{BinaryResult, IdMatchRequest, IdMatchResponse}
+import models.api1585.{DownstreamServerError, IdMatchApiError, IdMatchApiResponseSuccess, NinoNotFound}
+import models.{BinaryResult, IdMatchRequest, IdMatchResponse, OperationSucceeded}
 import play.api.Logging
 import repositories.IndividualCheckRepository
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.Session
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
@@ -54,45 +54,53 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
 
   private def limitedMatch(request: IdMatchRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] = {
 
-    getCounter(request.id).flatMap { count =>
+    getCounter(request.id) flatMap { count =>
       if (count >= appConfig.maxIdAttempts) {
         logger.info(s"[Session ID: ${Session.id(hc)}] max attempts exceeded. Current count: $count")
-        auditService.auditIdentityMatchExceeded(
-          idMatchRequest = request,
-          count = count,
-          idMatchResponse = "NotMatched"
-        )
+        auditService.auditIdentityMatchExceeded(request, count, idMatchResponse = "NotMatched")
         throw new LimitException(s"Individual check - retry limit reached (${appConfig.maxIdAttempts})")
       } else {
-        connector.matchId(request.nino, request.surname, request.forename, request.birthDate).map {
+        connector.matchId(request.nino, request.surname, request.forename, request.birthDate) flatMap {
           case IdMatchApiResponseSuccess(matched) =>
-            if(matched) {
-              logger.info(s"[Session ID: ${Session.id(hc)}] Matched")
-              auditService.auditIdentityMatched(
-                idMatchRequest = request,
-                count = count,
-                idMatchResponse = "Match"
-              )
-              clearCounter(request.id)
-            } else {
-              logger.info(s"[Session ID: ${Session.id(hc)}] Not matched, increasing counter")
-              auditService.auditIdentityMatchAttempt(
-                idMatchRequest = request,
-                count = count,
-                idMatchResponse = "NotMatched"
-              )
-              repository.incrementCounter(request.id)
+            auditResultAndUpdateCounter(matched, request, count) map { _ =>
+              Right(IdMatchResponse(id = request.id, idMatch = matched))
             }
-            Right(IdMatchResponse(id = request.id, idMatch = matched))
           case errorResponse: IdMatchApiError =>
-            auditService.auditIdentityMatchApiError(
-              idMatchRequest = request,
-              count = count,
-              idMatchResponse = errorResponse.toString
-            )
-            Left(errorResponse)
+            auditErrorAndUpdateCounter(errorResponse, request, count) map { _ =>
+              Left(errorResponse)
+            }
         }
       }
+    }
+  }
+
+  private def auditResultAndUpdateCounter(matched: Boolean, request: IdMatchRequest, count: Int)
+                                         (implicit hc: HeaderCarrier): Future[BinaryResult] = {
+
+    def auditResult(idMatchResponse: String): Unit = auditService.auditIdentityMatched(request, count, idMatchResponse)
+
+    if (matched) {
+      logger.info(s"[Session ID: ${Session.id(hc)}] Matched. Resetting counter.")
+      auditResult("Match")
+      clearCounter(request.id)
+    } else {
+      logger.info(s"[Session ID: ${Session.id(hc)}] Not matched. Increasing counter.")
+      auditResult("NotMatched")
+      repository.incrementCounter(request.id)
+    }
+  }
+
+  private def auditErrorAndUpdateCounter(errorResponse: IdMatchApiError, request: IdMatchRequest, count: Int)
+                                        (implicit hc: HeaderCarrier): Future[BinaryResult] = {
+
+    auditService.auditIdentityMatchApiError(request, count, errorResponse.toString)
+
+    errorResponse match {
+      case NinoNotFound =>
+        logger.info(s"[Session ID: ${Session.id(hc)}] NINO not found. Increasing counter.")
+        repository.incrementCounter(request.id)
+      case _ =>
+        Future.successful(OperationSucceeded)
     }
   }
 }
