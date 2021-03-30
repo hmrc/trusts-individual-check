@@ -27,7 +27,7 @@ class AuditService @Inject()(auditConnector: AuditConnector){
 
   import scala.concurrent.ExecutionContext.Implicits._
 
-  def audit(event: String,
+  private def audit(event: String,
             request: JsValue,
             internalId: String,
             response: JsValue)(implicit hc: HeaderCarrier): Unit = {
