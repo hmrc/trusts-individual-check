@@ -76,16 +76,13 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
 
   private def auditResultAndUpdateCounter(matched: Boolean, request: IdMatchRequest, count: Int)
                                          (implicit hc: HeaderCarrier): Future[BinaryResult] = {
-
-    def auditResult(idMatchResponse: String): Unit = auditService.auditIdentityMatched(request, count, idMatchResponse)
-
     if (matched) {
       logger.info(s"[Session ID: ${Session.id(hc)}] Matched. Resetting counter.")
-      auditResult("Match")
+      auditService.auditIdentityMatched(request, count, "Match")
       clearCounter(request.id)
     } else {
       logger.info(s"[Session ID: ${Session.id(hc)}] Not matched. Increasing counter.")
-      auditResult("NotMatched")
+      auditService.auditIdentityMatchAttempt(request, count, "NotMatched")
       repository.incrementCounter(request.id)
     }
   }
