@@ -42,7 +42,7 @@ class AuthenticatedIdentifierAction @Inject()(override val authConnector: AuthCo
     val retrievals = Retrievals.internalId and
                      Retrievals.affinityGroup
 
-    implicit val hc : HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
+    implicit val hc : HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
     authorised().retrieve(retrievals) {
       case Some(internalId) ~ Some(Agent) =>
