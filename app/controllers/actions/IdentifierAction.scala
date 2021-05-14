@@ -42,7 +42,7 @@ class AuthenticatedIdentifierAction @Inject()(override val authConnector: AuthCo
     val retrievals = Retrievals.internalId and
                      Retrievals.affinityGroup
 
-    implicit val hc : HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+    implicit val hc : HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
 
     authorised().retrieve(retrievals) {
       case Some(internalId) ~ Some(Agent) =>
@@ -54,7 +54,7 @@ class AuthenticatedIdentifierAction @Inject()(override val authConnector: AuthCo
         Future.successful(Unauthorized(Json.toJson(ErrorResponse("UNAUTHORISED", "Insufficient enrolment for authorised user."))))
     } recoverWith {
       case e : AuthorisationException =>
-        logger.info(s"[Session ID: ${Session.id(hc)}] AuthorisationException: $e")
+        logger.warn(s"[Session ID: ${Session.id(hc)}] AuthorisationException: $e")
         Future.successful(Unauthorized)
     }
   }
