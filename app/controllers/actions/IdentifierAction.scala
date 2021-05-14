@@ -54,7 +54,7 @@ class AuthenticatedIdentifierAction @Inject()(override val authConnector: AuthCo
         Future.successful(Unauthorized(Json.toJson(ErrorResponse("UNAUTHORISED", "Insufficient enrolment for authorised user."))))
     } recoverWith {
       case e : AuthorisationException =>
-        logger.warn(s"[Session ID: ${Session.id(hc)}] AuthorisationException: $e")
+        logger.info(s"[Session ID: ${Session.id(hc)}] AuthorisationException: $e")
         Future.successful(Unauthorized)
     }
   }
