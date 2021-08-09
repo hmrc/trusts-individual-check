@@ -5,20 +5,20 @@ object AppDependencies {
 
   val compile = Seq(
     play.sbt.PlayImport.ws,
-    "uk.gov.hmrc"             %% "bootstrap-backend-play-27"        % "5.8.0",
-    "org.reactivemongo"       %% "play2-reactivemongo"              % "0.20.3-play27",
-    "uk.gov.hmrc"             %% "domain"                           % "5.11.0-play-27",
+    "uk.gov.hmrc"             %% "bootstrap-backend-play-28"        % "5.10.0",
+    "org.reactivemongo"       %% "play2-reactivemongo"              % "0.20.13-play28",
+    "uk.gov.hmrc"             %% "domain"                           % "6.2.0-play-28",
     "com.amazonaws"            % "aws-java-sdk-s3"                  % "1.11.1016",
     "com.enragedginger"       %% "akka-quartz-scheduler"            % "1.9.0-akka-2.6.x",
-    "uk.gov.hmrc"             %% "mongo-lock"                       % "6.24.0-play-27"
+    "uk.gov.hmrc"             %% "mongo-lock"                       % "7.0.0-play-28"
   )
 
   val test = Seq(
-    "uk.gov.hmrc"             %% "bootstrap-test-play-27"   % "5.3.0",
+    "uk.gov.hmrc"             %% "bootstrap-test-play-28"   % "5.10.0",
     "org.scalatest"           %% "scalatest"                % "3.1.4",
     "com.typesafe.play"       %% "play-test"                % current,
     "com.vladsch.flexmark"    %  "flexmark-all"             % "0.35.10",
-    "org.scalatestplus.play"  %% "scalatestplus-play"       % "4.0.3",
+    "org.scalatestplus.play"  %% "scalatestplus-play"       % "5.1.0",
     "org.scalatestplus"       %% "mockito-3-3"              % "3.2.2.0",
     "org.scalacheck"          %% "scalacheck"               % "1.14.3",
     "com.github.tomakehurst"  %  "wiremock-standalone"      % "2.27.2"
