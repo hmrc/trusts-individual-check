@@ -5,7 +5,7 @@ object AppDependencies {
 
   val compile = Seq(
     play.sbt.PlayImport.ws,
-    "uk.gov.hmrc"             %% "bootstrap-backend-play-28"        % "5.10.0",
+    "uk.gov.hmrc"             %% "bootstrap-backend-play-28"        % "5.24.0",
     "org.reactivemongo"       %% "play2-reactivemongo"              % "0.20.13-play28",
     "uk.gov.hmrc"             %% "domain"                           % "6.2.0-play-28",
     "com.amazonaws"            % "aws-java-sdk-s3"                  % "1.11.1016",
@@ -14,7 +14,7 @@ object AppDependencies {
   )
 
   val test = Seq(
-    "uk.gov.hmrc"             %% "bootstrap-test-play-28"   % "5.10.0",
+    "uk.gov.hmrc"             %% "bootstrap-test-play-28"   % "5.24.0",
     "org.scalatest"           %% "scalatest"                % "3.1.4",
     "com.typesafe.play"       %% "play-test"                % current,
     "com.vladsch.flexmark"    %  "flexmark-all"             % "0.35.10",
