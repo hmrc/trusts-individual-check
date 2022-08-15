@@ -17,75 +17,55 @@
 package repositories
 
 import javax.inject.Inject
-import models.{BinaryResult, IndividualCheckCount, MongoDateTimeFormats, OperationSucceeded}
-import play.api.libs.json.{JsObject, Json}
-import play.modules.reactivemongo.ReactiveMongoApi
-import reactivemongo.api.WriteConcern
-import reactivemongo.play.json.collection.Helpers.idWrites
-import reactivemongo.play.json.collection.JSONCollection
-import reactivemongo.api.indexes.IndexType
-import play.api.Configuration
-import java.time.LocalDateTime
+import models.{BinaryResult, IndividualCheckCount, MongoDateTimeFormats, OperationFailed, OperationSucceeded}
+import play.api.libs.json.Json
+import org.mongodb.scala.model._
 
+import java.util.concurrent.TimeUnit
+import play.api.Configuration
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+
+import java.time.LocalDateTime
 import scala.concurrent.{ExecutionContext, Future}
 
 // Tested in integration testing
 // $COVERAGE-OFF$
-class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, config: Configuration)(implicit ec: ExecutionContext) {
-
-  val collectionName     : String = "individual-check-counters"
-
-  private val expireAfterSeconds = config.get[Int]("mongodb.ttl")
-
-  private val lastUpdatedIndex = MongoIndex(
-    key = Seq("lastUpdated" -> IndexType.Ascending),
-    name = "last-updated-index",
-    expireAfterSeconds = Some(expireAfterSeconds),
-    unique = false
-  )
-
-  private def collection : Future[JSONCollection] = for {
-      _ <- ensureIndexes
-      res <- mongo.database.map(_.collection[JSONCollection](collectionName))
-    } yield res
-
-  private lazy val idIndex = MongoIndex(
-    key = Seq("id" -> IndexType.Ascending),
-    name = "id-index",
-    unique = true
-  )
-
-  private def ensureIndexes = {
-    for {
-      collection                           <- mongo.database.map(_.collection[JSONCollection](collectionName))
-      createdLastUpdatedIndex              <- collection.indexesManager.ensure(lastUpdatedIndex)
-      createdIdIndex                       <- collection.indexesManager.ensure(idIndex)
-
-    } yield createdLastUpdatedIndex && createdIdIndex
-  }
+class IndividualCheckRepository @Inject()(mongo: MongoComponent, config: Configuration)(implicit ec: ExecutionContext)
+  extends PlayMongoRepository[IndividualCheckCount] (
+    collectionName = "individual-check-counters",
+    mongoComponent = mongo,
+    domainFormat = IndividualCheckCount.format,
+    indexes = Seq(
+      IndexModel(
+        Indexes.ascending("lastUpdated"),
+        IndexOptions()
+          .name("last-updated-index")
+          .expireAfter(config.get[Int]("mongodb.ttl"), TimeUnit.SECONDS)
+          .unique(false)
+      ),
+      IndexModel(
+        Indexes.ascending("id"),
+        IndexOptions()
+          .name("id-index")
+          .unique(true)
+      )
+    )
+  ){
 
   def getCounter(id: String): Future[Int] = {
-    val selector = Json.obj("id" -> Json.toJson(id))
+    val selector = Filters.equal("id", id)
+    val res = collection.find(selector).headOption()
 
-    collection.flatMap {
-      _.find[JsObject, JsObject](selector)
-        .one[IndividualCheckCount]
-        .map(_.map(_.attempts).getOrElse(0))
+    res.map {
+      case Some(value) => value.attempts
+      case None => 0
     }
   }
 
   def clearCounter(id: String): Future[BinaryResult] = {
-    val selector = Json.obj("id" -> Json.toJson(id))
-    collection.flatMap {
-      _.findAndRemove(
-        selector = selector,
-        sort = None,
-        fields = None,
-        writeConcern = WriteConcern.Default,
-        maxTime = None,
-        collation = None,
-        arrayFilters = Nil).map(_ => OperationSucceeded)
-    }
+    val res = collection.findOneAndDelete( Filters.equal("id", id)).toFutureOption()
+    binaryOutcome(res)
   }
 
   def incrementCounter(id: String): Future[BinaryResult] = {
@@ -93,29 +73,20 @@ class IndividualCheckRepository @Inject()(mongo: ReactiveMongoApi, config: Confi
   }
 
   def setCounter(id: String, attempts: Int): Future[BinaryResult] = {
+    val selector = Filters.equal("id", id)
+    val currentTime = Json.toJson(LocalDateTime.now)(MongoDateTimeFormats.localDateTimeWrite)
+    val modifier = Updates.combine(Updates.set("attempts", Codecs.toBson(attempts)), Updates.set("lastUpdated", Codecs.toBson(currentTime)))
+    val updateOptions = new FindOneAndUpdateOptions().upsert(true)
 
-    val selector = Json.obj("id" -> Json.toJson(id))
-    val modifier = Json.obj(
-      "$set" -> Json.obj(
-        "attempts" -> attempts,
-        "lastUpdated" -> Json.toJson(LocalDateTime.now)(MongoDateTimeFormats.localDateTimeWrite)
-        )
-      )
+    val res = collection.findOneAndUpdate(selector, modifier, updateOptions).toFutureOption()
 
-    collection.flatMap {
-      _.findAndUpdate[JsObject, JsObject](
-        selector = selector,
-        update = modifier,
-        fetchNewObject = true,
-        upsert = true,
-        sort = None,
-        fields = None,
-        bypassDocumentValidation = false,
-        writeConcern = WriteConcern.Default,
-        maxTime = None,
-        collation = None,
-        arrayFilters = Nil)
-        .map(_ => OperationSucceeded)
+    binaryOutcome(res)
+  }
+
+  def binaryOutcome(result: Future[Option[IndividualCheckCount]]): Future[BinaryResult] = {
+    result.flatMap {
+      case Some(_) => Future.successful(OperationSucceeded)
+      case None => Future.successful(OperationFailed)
     }
   }
 }
