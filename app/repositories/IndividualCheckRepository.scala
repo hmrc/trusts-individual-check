@@ -23,7 +23,8 @@ import org.mongodb.scala.model._
 import play.api.Configuration
 import play.api.libs.json.Json.toJson
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.Codecs.toBson
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
@@ -76,7 +77,7 @@ class IndividualCheckRepository @Inject()(mongo: MongoComponent, config: Configu
   def setCounter(id: String, attempts: Int): Future[BinaryResult] = {
     val selector = equal("id", id)
     val currentTime = toJson(LocalDateTime.now)(MongoDateTimeFormats.localDateTimeWrite)
-    val modifier = combine(set("attempts", Codecs.toBson(attempts)), set("lastUpdated", Codecs.toBson(currentTime)))
+    val modifier = combine(set("attempts", toBson(attempts)), set("lastUpdated", toBson(currentTime)))
     val updateOptions = new FindOneAndUpdateOptions().upsert(true)
 
     val res = collection.findOneAndUpdate(selector, modifier, updateOptions).toFutureOption()
