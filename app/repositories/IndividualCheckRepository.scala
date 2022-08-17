@@ -16,17 +16,18 @@
 
 package repositories
 
-import javax.inject.Inject
-import models.{BinaryResult, IndividualCheckCount, MongoDateTimeFormats, OperationFailed, OperationSucceeded}
-import play.api.libs.json.Json
+import models._
+import org.mongodb.scala.model.Filters.equal
+import org.mongodb.scala.model.Updates.{combine, set}
 import org.mongodb.scala.model._
-
-import java.util.concurrent.TimeUnit
 import play.api.Configuration
+import play.api.libs.json.Json.toJson
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import java.time.LocalDateTime
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 // Tested in integration testing
@@ -54,8 +55,8 @@ class IndividualCheckRepository @Inject()(mongo: MongoComponent, config: Configu
   ){
 
   def getCounter(id: String): Future[Int] = {
-    val selector = Filters.equal("id", id)
-    val res = collection.find(selector).headOption()
+    val selector = equal("id", id)
+    val res = collection.find(selector).first().toFutureOption()
 
     res.map {
       case Some(value) => value.attempts
@@ -64,7 +65,7 @@ class IndividualCheckRepository @Inject()(mongo: MongoComponent, config: Configu
   }
 
   def clearCounter(id: String): Future[BinaryResult] = {
-    val res = collection.findOneAndDelete( Filters.equal("id", id)).toFutureOption()
+    val res = collection.findOneAndDelete(equal("id", id)).toFutureOption()
     binaryOutcome(res)
   }
 
@@ -73,9 +74,9 @@ class IndividualCheckRepository @Inject()(mongo: MongoComponent, config: Configu
   }
 
   def setCounter(id: String, attempts: Int): Future[BinaryResult] = {
-    val selector = Filters.equal("id", id)
-    val currentTime = Json.toJson(LocalDateTime.now)(MongoDateTimeFormats.localDateTimeWrite)
-    val modifier = Updates.combine(Updates.set("attempts", Codecs.toBson(attempts)), Updates.set("lastUpdated", Codecs.toBson(currentTime)))
+    val selector = equal("id", id)
+    val currentTime = toJson(LocalDateTime.now)(MongoDateTimeFormats.localDateTimeWrite)
+    val modifier = combine(set("attempts", Codecs.toBson(attempts)), set("lastUpdated", Codecs.toBson(currentTime)))
     val updateOptions = new FindOneAndUpdateOptions().upsert(true)
 
     val res = collection.findOneAndUpdate(selector, modifier, updateOptions).toFutureOption()
