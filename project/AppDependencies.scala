@@ -9,8 +9,7 @@ object AppDependencies {
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"               % "0.70.0",
     "uk.gov.hmrc"             %% "domain"                           % "6.2.0-play-28",
     "com.amazonaws"            % "aws-java-sdk-s3"                  % "1.11.1016",
-    "com.enragedginger"       %% "akka-quartz-scheduler"            % "1.9.0-akka-2.6.x",
-    "uk.gov.hmrc"             %% "mongo-lock"                       % "7.0.0-play-28"
+    "com.enragedginger"       %% "akka-quartz-scheduler"            % "1.9.0-akka-2.6.x"
   )
 
   val test = Seq(

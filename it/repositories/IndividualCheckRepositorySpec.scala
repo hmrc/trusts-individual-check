@@ -1,25 +1,22 @@
 package repositories
 
 import models.IndividualCheckCount
-import org.scalatest.OptionValues
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.mongodb.scala.bson.BsonDocument
+import org.mongodb.scala.model.InsertManyOptions
+import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
-import play.api.inject.guice.GuiceApplicationBuilder
-import reactivemongo.play.json.collection.JSONCollection
-import play.api.test.Helpers.running
-import suite.MongoSuite
 import org.scalatest.matchers.must.{Matchers => MustMatchers}
+import play.api.test.Helpers.{await, defaultAwaitTimeout}
+import suite.MongoSuite
 
-import scala.concurrent.ExecutionContext.Implicits.global
+class IndividualCheckRepositorySpec extends AnyFreeSpec with MustMatchers with MongoSuite with BeforeAndAfterEach {
 
-class IndividualCheckRepositorySpec
-  extends AnyFreeSpec
-    with MustMatchers
-    with ScalaFutures
-    with OptionValues
-    with MongoSuite
-    with IntegrationPatience {
+  private val repository = createApplication.injector.instanceOf[IndividualCheckRepository]
 
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    await(repository.collection.deleteMany(BsonDocument()).toFuture())
+  }
 
   "getCounter" - {
 
@@ -30,24 +27,12 @@ class IndividualCheckRepositorySpec
         IndividualCheckCount("id2", 2)
       )
 
-      database.flatMap(_.drop()).futureValue
+      val insertOptions = new InsertManyOptions().ordered(false)
+      await(repository.collection.insertMany(existingRecords, insertOptions).toFuture())
 
-      database.flatMap {
-        _.collection[JSONCollection]("individual-check-counters")
-          .insert(ordered = false)
-          .many(existingRecords)
-      }.futureValue
-
-      val app = new GuiceApplicationBuilder().build()
-
-      running(app) {
-
-        val repo = app.injector.instanceOf[IndividualCheckRepository]
-
-        repo.getCounter("id1").futureValue mustEqual 1
-        repo.getCounter("id2").futureValue mustEqual 2
-        repo.getCounter("id3").futureValue mustEqual 0
-      }
+      await(repository.getCounter("id1")) mustEqual 1
+      await(repository.getCounter("id2")) mustEqual 2
+      await(repository.getCounter("id3")) mustEqual 0
     }
   }
 
@@ -60,28 +45,16 @@ class IndividualCheckRepositorySpec
         IndividualCheckCount("id2", 2)
       )
 
-      database.flatMap(_.drop()).futureValue
+      val insertOptions = new InsertManyOptions().ordered(false)
+      await(repository.collection.insertMany(existingRecords, insertOptions).toFuture())
 
-      database.flatMap {
-        _.collection[JSONCollection]("individual-check-counters")
-          .insert(ordered = false)
-          .many(existingRecords)
-      }.futureValue
+      await(repository.setCounter("id1", 2))
+      await(repository.setCounter("id2", 3))
+      await(repository.setCounter("id3", 1))
 
-      val app = new GuiceApplicationBuilder().build()
-
-      running(app) {
-
-        val repo = app.injector.instanceOf[IndividualCheckRepository]
-
-        repo.setCounter("id1", 2).futureValue
-        repo.setCounter("id2", 3).futureValue
-        repo.setCounter("id3", 1).futureValue
-
-        repo.getCounter("id1").futureValue mustEqual 2
-        repo.getCounter("id2").futureValue mustEqual 3
-        repo.getCounter("id3").futureValue mustEqual 1
-      }
+      await(repository.getCounter("id1")) mustEqual 2
+      await(repository.getCounter("id2")) mustEqual 3
+      await(repository.getCounter("id3")) mustEqual 1
     }
   }
 
@@ -93,25 +66,15 @@ class IndividualCheckRepositorySpec
         IndividualCheckCount("id1", 1)
       )
 
-      database.flatMap(_.drop()).futureValue
+      val insertOptions = new InsertManyOptions().ordered(false)
+      await(repository.collection.insertMany(existingRecords, insertOptions).toFuture())
 
-      database.flatMap {
-        _.collection[JSONCollection]("individual-check-counters")
-          .insert(ordered = false)
-          .many(existingRecords)
-      }.futureValue
-
-      val app = new GuiceApplicationBuilder().build()
-
-      running(app) {
-        val repo = app.injector.instanceOf[IndividualCheckRepository]
-        repo.incrementCounter("id1").futureValue
-        repo.getCounter("id1").futureValue mustEqual 2
+      await(repository.incrementCounter("id1"))
+      await(repository.getCounter("id1")) mustEqual 2
 
 
-        repo.incrementCounter("id2").futureValue
-        repo.getCounter("id2").futureValue mustEqual 1
-      }
+      await(repository.incrementCounter("id2"))
+      await(repository.getCounter("id2")) mustEqual 1
     }
   }
 
@@ -123,21 +86,11 @@ class IndividualCheckRepositorySpec
         IndividualCheckCount("id1", 1)
       )
 
-      database.flatMap(_.drop()).futureValue
+      val insertOptions = new InsertManyOptions().ordered(false)
+      await(repository.collection.insertMany(existingRecords, insertOptions).toFuture())
 
-      database.flatMap {
-        _.collection[JSONCollection]("individual-check-counters")
-          .insert(ordered = false)
-          .many(existingRecords)
-      }.futureValue
-
-      val app = new GuiceApplicationBuilder().build()
-
-      running(app) {
-        val repo = app.injector.instanceOf[IndividualCheckRepository]
-        repo.clearCounter("id1").futureValue
-        repo.getCounter("id1").futureValue mustEqual 0
-      }
+      await(repository.clearCounter("id1"))
+      await(repository.getCounter("id1")) mustEqual 0
     }
   }
 }
