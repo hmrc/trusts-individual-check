@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import services.IdentityMatchService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.Session
-import uk.gov.hmrc.play.bootstrap.controller.WithDefaultFormBinding
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,7 +34,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class IndividualCheckController @Inject()(service: IdentityMatchService,
                                           cc: ControllerComponents,
                                           identify: IdentifierAction
-                                         )(implicit ec: ExecutionContext) extends BackendController(cc) with Logging with WithDefaultFormBinding {
+                                         )(implicit ec: ExecutionContext) extends BackendController(cc) with Logging {
 
   def individualCheck(): Action[JsValue] = identify.async(parse.json) {
     implicit request =>
