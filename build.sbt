@@ -1,5 +1,4 @@
 import play.sbt.routes.RoutesKeys
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
 import sbt.Keys.useSuperShell
 import scoverage.ScoverageKeys
 
@@ -9,13 +8,14 @@ lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
   .settings(
+    scalacOptions -= "-Xmax-classfile-name",
     majorVersion := 0,
-    scalaVersion := "2.12.12",
-    SilencerSettings(),
-    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
+    scalaVersion := "2.13.10",
+    // To resolve a bug with version 2.x.x of the scoverage plugin - https://github.com/sbt/sbt/issues/6997
+    libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always,
+    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test
   )
-  .settings(useSuperShell in ThisBuild := false)
-  .settings(publishingSettings: _*)
+  .settings(ThisBuild / useSuperShell := false)
   .settings(inConfig(IntegrationTest)(itSettings): _*)
   .configs(IntegrationTest)
   .settings(resolvers += Resolver.jcenterRepo)
@@ -25,7 +25,7 @@ lazy val microservice = Project(appName, file("."))
     ScoverageKeys.coverageExcludedPackages := "<empty>;scheduler.jobs.*;",
     ScoverageKeys.coverageExcludedFiles := "<empty>;Reverse.*;..*components.*;" +
       ".*Routes.*;.*ControllerConfiguration;.*EncryptedDataModule;.*Modules;.*WorkerConfig;",
-    ScoverageKeys.coverageMinimum := 89,
+    ScoverageKeys.coverageMinimumStmtTotal := 89,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
     scalacOptions ++= Seq("-feature"),

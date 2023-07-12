@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
       "return a response to a valid request" in {
 
-        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck.url)
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(successRequest))
 
         val result = route(app, request).get
@@ -65,7 +65,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
         val requestWithInvalidNino = IdMatchRequest(id = idString, nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
 
-        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck.url)
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(requestWithInvalidNino))
 
         val result = route(app, request).get
@@ -83,7 +83,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
       "return not found if the API is unable to locate the nino" in {
 
-        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck.url)
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(notFoundRequest))
 
         val result = route(app, request).get
@@ -101,7 +101,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
       "return a service unavailable if API sends 503" in {
 
-        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck.url)
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(serviceUnavailableRequest))
 
         val result = route(app, request).get
@@ -119,7 +119,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
       "return a internal server error if API sends 500" in {
 
-        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck.url)
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(internalServerErrorRequest))
 
         val result = route(app, request).get
@@ -137,7 +137,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
       "return a specific response if API limit is reached" in {
 
-        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck.url)
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(maxAttemptsRequest))
 
         val result = route(app, request).get
