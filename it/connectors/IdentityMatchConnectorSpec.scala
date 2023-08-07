@@ -28,17 +28,17 @@ import play.api.http.Status._
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.DefaultAwaitTimeout
 import play.api.test.Helpers.CONTENT_TYPE
+import suite.{BaseSuite, WireMockHelper}
 import uk.gov.hmrc.http.HeaderCarrier
-import util.IdentityMatchHelper
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
-                                                      with Matchers
-                                                      with GuiceOneAppPerSuite
-                                                      with ScalaFutures
-                                                      with DefaultAwaitTimeout
-                                                      with WireMockHelper
+class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
+  with Matchers
+  with GuiceOneAppPerSuite
+  with ScalaFutures
+  with DefaultAwaitTimeout
+  with WireMockHelper
   with IntegrationPatience
   with EitherValues {
 
@@ -72,10 +72,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
         val result =
           identityMatchConnector.matchId(successRequest.nino, successRequest.surname, successRequest.forename, successRequest.birthDate)
 
-        whenReady(result) {
-          r =>
-            r mustBe IdMatchApiResponseSuccess(true)
-        }
+        result.futureValue mustBe IdMatchApiResponseSuccess(true)
       }
 
       "error response is returned from the API" in {
@@ -91,10 +88,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
         val result =
           identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
 
-        whenReady(result) {
-          r =>
-            r mustBe NinoNotFound
-        }
+        result.futureValue mustBe NinoNotFound
       }
 
       "internal server error is returned from the API" in {
@@ -110,10 +104,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
         val result =
           identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
 
-        whenReady(result) {
-          r =>
-            r mustBe DownstreamServerError
-        }
+        result.futureValue mustBe DownstreamServerError
       }
 
       "service unavailable is returned from the API" in {
@@ -129,10 +120,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec  with IdentityMatchHelper
         val result =
           identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
 
-        whenReady(result) {
-          r =>
-            r mustBe DownstreamServiceUnavailable
-        }
+        result.futureValue mustBe DownstreamServiceUnavailable
       }
 
       "throw an exception" when {

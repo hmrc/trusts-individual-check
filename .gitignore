@@ -1,8 +1,5 @@
-.*
 .metals/
 project/metals.sbt
-!.gitignore
-!.scalafmt.conf
 .cache
 /.classpath
 db
@@ -34,3 +31,4 @@ test-result
 tmp
 .idea_modules
 bin
+.bsp

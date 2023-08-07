@@ -1,6 +1,6 @@
 import play.sbt.routes.RoutesKeys
-import sbt.Keys.useSuperShell
 import scoverage.ScoverageKeys
+import uk.gov.hmrc.DefaultBuildSettings
 
 val appName = "trusts-individual-check"
 
@@ -8,30 +8,27 @@ lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
   .settings(
-    scalacOptions -= "-Xmax-classfile-name",
     majorVersion := 0,
-    scalaVersion := "2.13.10",
+    scalaVersion := "2.13.11",
     // To resolve a bug with version 2.x.x of the scoverage plugin - https://github.com/sbt/sbt/issues/6997
     libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always,
-    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test
+    libraryDependencies ++= AppDependencies()
   )
-  .settings(ThisBuild / useSuperShell := false)
-  .settings(inConfig(IntegrationTest)(itSettings): _*)
+  .settings(inConfig(IntegrationTest)(itSettings))
   .configs(IntegrationTest)
-  .settings(resolvers += Resolver.jcenterRepo)
   .settings(
     PlayKeys.playDefaultPort := 9846,
     RoutesKeys.routesImport += "models._",
     ScoverageKeys.coverageExcludedPackages := "<empty>;scheduler.jobs.*;",
     ScoverageKeys.coverageExcludedFiles := "<empty>;Reverse.*;..*components.*;" +
-      ".*Routes.*;.*ControllerConfiguration;.*EncryptedDataModule;.*Modules;.*WorkerConfig;",
-    ScoverageKeys.coverageMinimumStmtTotal := 89,
+      ".*Routes.*;.*ControllerConfiguration;.*EncryptedDataModule;.*Modules;.*WorkerConfig;.*CounterController;",
+    ScoverageKeys.coverageMinimumStmtTotal := 95,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
-    scalacOptions ++= Seq("-feature"),
+    scalacOptions ++= Seq("-feature", "-Wconf:src=routes/.*:s")
   )
 
-lazy val itSettings = Defaults.itSettings ++ Seq(
+lazy val itSettings = DefaultBuildSettings.integrationTestSettings() ++ Seq(
   unmanagedSourceDirectories   := Seq(
     baseDirectory.value / "it"
   ),
@@ -46,4 +43,4 @@ lazy val itSettings = Defaults.itSettings ++ Seq(
   )
 )
 
-dependencyOverrides ++= AppDependencies.overrides
+addCommandAlias("scalastyleAll", "all scalastyle Test/scalastyle IntegrationTest/scalastyle")
