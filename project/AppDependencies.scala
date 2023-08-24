@@ -10,7 +10,7 @@ object AppDependencies {
     "uk.gov.hmrc"             %% "bootstrap-backend-play-28"        % bootstrapVersion,
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"               % mongoVersion,
     "uk.gov.hmrc"             %% "domain"                           % "8.3.0-play-28",
-    "com.amazonaws"            % "aws-java-sdk-s3"                  % "1.12.522",
+    "com.amazonaws"            % "aws-java-sdk-s3"                  % "1.12.536",
     "com.enragedginger"       %% "akka-quartz-scheduler"            % "1.9.3-akka-2.6.x"
   )
 
