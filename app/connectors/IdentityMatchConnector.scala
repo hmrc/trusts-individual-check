@@ -66,6 +66,5 @@ class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppC
         logger.error(s"[Session ID: ${Session.id(hc)}] Unable to transform request for IFS due to ${JsError.toJson(errors)} for correlationId: $correlationId")
         throw new InvalidIdMatchRequest("Could not validate the request")
     }
-
   }
 }

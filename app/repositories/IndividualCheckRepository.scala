@@ -31,8 +31,6 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 import javax.inject.{Inject, Singleton}
 
-// Tested in integration testing
-// $COVERAGE-OFF$
 @Singleton
 class IndividualCheckRepository @Inject()(mongo: MongoComponent, config: Configuration)(implicit ec: ExecutionContext)
   extends PlayMongoRepository[IndividualCheckCount] (

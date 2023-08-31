@@ -51,11 +51,8 @@ class AuthActionSpec extends BaseSpec {
   }
 
   "Auth Action" when {
-
     "Agent user" must {
-
       "allow user to continue" in {
-
         val authAction = actionToTest(new FakeAuthConnector(authRetrievals(agentAffinityGroup)))
         val controller = new Harness(authAction)
         val result = controller.onSubmit()(fakeRequest)
@@ -64,13 +61,10 @@ class AuthActionSpec extends BaseSpec {
 
         application.stop()
       }
-
     }
 
     "Org user with no enrolments" must {
-
       "allow user to continue" in {
-
         val authAction = actionToTest(new FakeAuthConnector(authRetrievals(orgAffinityGroup)))
         val controller = new Harness(authAction)
         val result = controller.onSubmit()(fakeRequest)
@@ -79,13 +73,10 @@ class AuthActionSpec extends BaseSpec {
 
         application.stop()
       }
-
     }
 
     "Individual user" must {
-
       "redirect the user to the unauthorised page" in {
-        
         val authAction = actionToTest(new FakeAuthConnector(authRetrievals(Individual)))
         val controller = new Harness(authAction)
         val result = controller.onSubmit()(fakeRequest)
@@ -93,13 +84,10 @@ class AuthActionSpec extends BaseSpec {
 
         application.stop()
       }
-
     }
 
     "the user hasn't logged in" must {
-
       "redirect the user to log in " in {
-
         val authAction = actionToTest(new FakeFailingAuthConnector(new MissingBearerToken))
         val controller = new Harness(authAction)
         val result = controller.onSubmit()(fakeRequest)
@@ -111,9 +99,7 @@ class AuthActionSpec extends BaseSpec {
     }
 
     "the user's session has expired" must {
-
       "redirect the user to log in " in {
-
         val authAction = actionToTest(new FakeFailingAuthConnector(new BearerTokenExpired))
         val controller = new Harness(authAction)
         val result = controller.onSubmit()(fakeRequest)
@@ -133,12 +119,9 @@ class FakeFailingAuthConnector @Inject()(exceptionToReturn: Throwable) extends A
     Future.failed(exceptionToReturn)
 }
 
-
 class FakeAuthConnector(stubbedRetrievalResult: Future[_]) extends AuthConnector {
 
   override def authorise[A](predicate: Predicate, retrieval: Retrieval[A])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[A] = {
     stubbedRetrievalResult.map(_.asInstanceOf[A])
   }
-
 }
-

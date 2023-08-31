@@ -158,6 +158,4 @@ class AuditService @Inject()(auditConnector: AuditConnector)(implicit ec: Execut
       response = response
     )
   }
-
-
 }
