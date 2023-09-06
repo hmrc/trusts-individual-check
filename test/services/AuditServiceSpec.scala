@@ -208,9 +208,6 @@ class AuditServiceSpec extends BaseSpec {
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
         equalTo("LeadTrusteeIdentityMatchApiError"),
         equalTo(expectedAuditData))(any(), any(), any())
-
     }
-
   }
-
 }
