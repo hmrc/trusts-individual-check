@@ -16,12 +16,13 @@
 
 package services
 
-import javax.inject.Inject
 import models.IdMatchRequest
 import models.auditing.{GetTrustAuditEvent, TrustAuditing}
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsValue, Json, OWrites}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+
+import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 
 class AuditService @Inject()(auditConnector: AuditConnector)(implicit ec: ExecutionContext){
@@ -157,5 +158,9 @@ class AuditService @Inject()(auditConnector: AuditConnector)(implicit ec: Execut
       internalId = idMatchRequest.id,
       response = response
     )
+  }
+
+  def auditOutboundCall[T](request: T)(implicit hc: HeaderCarrier, writes: OWrites[T]) = {
+    auditConnector.sendExplicitAudit[T](TrustAuditing.LEAD_TRUSTEE_IDENTITY_MATCH_OUTBOUND_REQUEST, request)
   }
 }

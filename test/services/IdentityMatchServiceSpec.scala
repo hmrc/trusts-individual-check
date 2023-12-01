@@ -53,6 +53,7 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
           matched = true
         )
 
+        verify(mockAuditService, times(1)).auditOutboundCall(any()) (any(),any())
         verify(mockAuditService).auditIdentityMatched(any(), any(), mockEq("Match"))(any())
       }
 
@@ -62,6 +63,7 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
           error = NinoNotFound
         )
 
+        verify(mockAuditService, times(1)).auditOutboundCall(any()) (any(),any())
         verify(mockAuditService).auditIdentityMatchApiError(any(), any(), any())(any())
       }
 
@@ -83,6 +85,7 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
           matched = false
         )
 
+        verify(mockAuditService, times(1)).auditOutboundCall(any()) (any(),any())
         verify(mockAuditService).auditIdentityMatchAttempt(any(), any(), mockEq("NotMatched"))(any())
         verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
       }
@@ -94,6 +97,7 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
           error = NinoNotFound
         )
 
+        verify(mockAuditService, times(1)).auditOutboundCall(any()) (any(),any())
         verify(mockAuditService).auditIdentityMatchApiError(any(), any(), any())(any())
         verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
       }
@@ -121,6 +125,7 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
       )
 
       verify(mockIndividualCheckRepository, times(1)).clearCounter(mockEq(idString))
+      verify(mockAuditService, times(3)).auditOutboundCall(any()) (any(),any())
     }
   }
 

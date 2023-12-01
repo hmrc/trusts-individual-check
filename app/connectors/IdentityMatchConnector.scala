@@ -16,22 +16,22 @@
 
 package connectors
 
-import java.util.UUID
-
 import config.AppConfig
 import exceptions.InvalidIdMatchRequest
-import javax.inject.Inject
 import models.api1585.IdMatchApiHttpReads.httpReads
 import models.api1585.{IdMatchApiRequest, IdMatchApiResponse}
 import play.api.Logging
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsError, JsSuccess, Json}
+import services.AuditService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 import utils.Session
 
+import java.util.UUID
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppConfig) extends Logging {
+class IdentityMatchConnector @Inject()(val http: HttpClient, auditService: AuditService, val appConfig: AppConfig) extends Logging {
 
   private val postUrl = appConfig.idMatchEndpoint
 
@@ -58,6 +58,7 @@ class IdentityMatchConnector @Inject()(val http: HttpClient, val appConfig: AppC
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headers(correlationId))
 
     logger.info(s"[Session ID: ${Session.id(hc)}] Matching individual for correlationId: $correlationId")
+    auditService.auditOutboundCall(request)
 
     Json.toJson(request).validate[IdMatchApiRequest] match {
       case JsSuccess(_, _) =>
