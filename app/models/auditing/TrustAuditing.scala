@@ -21,4 +21,5 @@ object TrustAuditing {
   val LEAD_TRUSTEE_IDENTITY_MATCH_ATTEMPT = "LeadTrusteeIdentityMatchAttempt"
   val LEAD_TRUSTEE_IDENTITY_MATCHED = "LeadTrusteeIdentityMatched"
   val LEAD_TRUSTEE_IDENTITY_MATCH_API_ERROR = "LeadTrusteeIdentityMatchApiError"
+  val LEAD_TRUSTEE_IDENTITY_MATCH_OUTBOUND_REQUEST = "LeadTrusteeIdentityMatchOutboundRequest"
 }
