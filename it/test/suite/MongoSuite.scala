@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,23 @@
 
 package suite
 
-import com.typesafe.config.ConfigFactory
 import org.scalatest.time.{Millis, Seconds, Span}
+import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.{Application, Configuration}
 import uk.gov.hmrc.mongo.test.MongoSupport
 
 trait MongoSuite extends MongoSupport {
 
   implicit val defaultPatience: PatienceConfig = PatienceConfig(timeout = Span(30, Seconds), interval = Span(500, Millis))
 
-  private lazy val config = Configuration(ConfigFactory.load(System.getProperty("config.resource")))
-
-  val connectionString: String = config.get[String]("mongodb.uri")
-
-  def dropTheDatabase(): Unit = {
-    mongoDatabase.drop()
-  }
+  def dropTheDatabase(): Unit = mongoDatabase.drop()
 
   lazy val createApplication: Application = new GuiceApplicationBuilder()
-    .configure(config)
+    .configure(
+      "mongodb.uri" -> "mongodb://localhost:27017/individual-check-it",
+      "metrics.enabled" -> false,
+      "auditing.enabled" -> false
+    )
     .build()
 
 }

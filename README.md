@@ -9,18 +9,22 @@ Accepts a valid `IdMatchRequest` as a JSON encoded body, and returns an `IdMatch
 
 To run locally using the micro-service provided by the service manager:
 
-```
+```bash
 sm2 --start TRUSTS_ALL
 ```
 
 If you want to run your local copy, then stop the frontend ran by the service manager and run your local code by using the following (port number is 9780 but is defaulted to that in build.sbt).
 
-`sbt run`
+```bash
+sbt run
+```
 
 ### Testing
 To test the service locally run use the following script, this will run both the unit and integration tests as well as check for dependency updates and check the coverage of the tests.
 
-`./run_all_tests.sh`
+```bash
+./run_all_tests.sh
+```
 
 ### Error Handling
 

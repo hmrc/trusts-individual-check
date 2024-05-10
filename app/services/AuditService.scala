@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,7 +160,6 @@ class AuditService @Inject()(auditConnector: AuditConnector)(implicit ec: Execut
     )
   }
 
-  def auditOutboundCall[T](request: T)(implicit hc: HeaderCarrier, writes: OWrites[T]) = {
+  def auditOutboundCall[T](request: T)(implicit hc: HeaderCarrier, writes: OWrites[T]): Unit =
     auditConnector.sendExplicitAudit[T](TrustAuditing.LEAD_TRUSTEE_IDENTITY_MATCH_OUTBOUND_REQUEST, request)
-  }
 }

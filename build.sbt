@@ -1,46 +1,27 @@
-import play.sbt.routes.RoutesKeys
 import scoverage.ScoverageKeys
-import uk.gov.hmrc.DefaultBuildSettings
+import uk.gov.hmrc.DefaultBuildSettings.itSettings
 
 val appName = "trusts-individual-check"
+
+ThisBuild / scalaVersion := "2.13.13"
+ThisBuild / majorVersion := 0
 
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
   .settings(
-    majorVersion := 0,
-    scalaVersion := "2.13.12",
-    // To resolve a bug with version 2.x.x of the scoverage plugin - https://github.com/sbt/sbt/issues/6997
-    libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always,
-    libraryDependencies ++= AppDependencies()
-  )
-  .settings(inConfig(IntegrationTest)(itSettings))
-  .configs(IntegrationTest)
-  .settings(
     PlayKeys.playDefaultPort := 9846,
-    RoutesKeys.routesImport += "models._",
-    ScoverageKeys.coverageExcludedPackages := "<empty>;scheduler.jobs.*;",
-    ScoverageKeys.coverageExcludedFiles := "<empty>;Reverse.*;..*components.*;" +
-      ".*Routes.*;.*ControllerConfiguration;.*EncryptedDataModule;.*Modules;.*WorkerConfig;.*CounterController;",
+    ScoverageKeys.coverageExcludedFiles := "<empty>;.*components.*;.*Routes.*",
     ScoverageKeys.coverageMinimumStmtTotal := 95,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
-    scalacOptions ++= Seq("-feature", "-Wconf:src=routes/.*:s")
+    scalacOptions ++= Seq("-feature", "-Wconf:src=routes/.*:s"),
+    libraryDependencies ++= AppDependencies()
   )
 
-lazy val itSettings = DefaultBuildSettings.integrationTestSettings() ++ Seq(
-  unmanagedSourceDirectories   := Seq(
-    baseDirectory.value / "it"
-  ),
-  unmanagedResourceDirectories := Seq(
-    baseDirectory.value / "it" / "resources"
-  ),
-  parallelExecution            := false,
-  fork                         := true,
-  javaOptions                  ++= Seq(
-    "-Dconfig.resource=it.application.conf",
-    "-Dlogger.resource=it.logback.xml"
-  )
-)
+lazy val it = project
+  .enablePlugins(PlayScala)
+  .dependsOn(microservice % "test->test") // the "test->test" allows reusing test code and test dependencies
+  .settings(itSettings())
 
-addCommandAlias("scalastyleAll", "all scalastyle Test/scalastyle IntegrationTest/scalastyle")
+addCommandAlias("scalastyleAll", "all scalastyle Test/scalastyle it/Test/scalastyle")
