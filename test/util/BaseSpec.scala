@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, Inside}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
+import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
@@ -46,6 +47,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AffinityGroup.Organisation
 import uk.gov.hmrc.http.HeaderCarrier
+
 import scala.concurrent.ExecutionContext.Implicits._
 
 class BaseSpec extends AnyWordSpec
@@ -60,7 +62,7 @@ class BaseSpec extends AnyWordSpec
 
   private val bodyParsers = stubControllerComponents().parsers.defaultBodyParser
 
-  lazy val application = applicationBuilder().build()
+  lazy val application: Application = applicationBuilder().build()
 
   def applicationBuilder(): GuiceApplicationBuilder = {
     new GuiceApplicationBuilder()
@@ -68,9 +70,8 @@ class BaseSpec extends AnyWordSpec
         bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, Organisation))
       )
       .configure(
-        Seq(
           "metrics.enabled" -> false,
-          "auditing.enabled" -> false): _*
+          "auditing.enabled" -> false
       )
   }
 

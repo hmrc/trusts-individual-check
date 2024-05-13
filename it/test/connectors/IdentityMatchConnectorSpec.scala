@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,10 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
   private def applicationBuilder(): GuiceApplicationBuilder = new GuiceApplicationBuilder()
     .configure(
-      Seq(
-        "microservice.services.individual-match.port" -> server.port()
-      ): _*
+      "microservice.services.individual-match.port" -> server.port(),
+      "mongodb.uri" -> "mongodb://localhost:27017/individual-check-it",
+      "metrics.enabled" -> false,
+      "auditing.enabled" -> false
     )
 
   private lazy val application = applicationBuilder().build()
