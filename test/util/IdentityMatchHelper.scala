@@ -16,35 +16,38 @@
 
 package util
 
+import config.AppConfig
 import models.api1585._
 import models.{IdMatchRequest, IdMatchResponse, OperationSucceeded}
-import org.mockito.ArgumentMatchers.{any, eq => mockEq}
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, when}
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsValue, Json}
 import repositories.IndividualCheckRepository
 import services.AuditService
+import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 import uk.gov.hmrc.http.HttpClient
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: Suite =>
+trait IdentityMatchHelper extends BaseSpec with MockitoSugar with BeforeAndAfterEach { this: Suite =>
 
   val httpClient: HttpClient = mock[HttpClient]
 
+  implicit lazy val ec: ExecutionContext = ExecutionContext.Implicits.global
+
+  val mockHttpClient: HttpClientV2 = mock[HttpClientV2]
+  val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
   val mockIndividualCheckRepository: IndividualCheckRepository = mock[IndividualCheckRepository]
   val mockAuditService: AuditService = mock[AuditService]
+  val mockAppConfig: AppConfig = mock[AppConfig]
 
   val idString = "IDSTRING"
-
   val maxAttemptsIdString = "MAX ATTEMPTS"
 
   val matchSuccessBody = """{"individualMatch":true}"""
-
   val matchSuccess: JsValue = Json.parse(matchSuccessBody)
-
   val matchFailure: JsValue = Json.parse("""{"individualMatch":false}""")
 
   val internalServerErrorBody: String =
@@ -125,38 +128,22 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
 
 
   override def beforeEach(): Unit = {
-
-    reset(httpClient)
+    reset(mockHttpClient)
+    reset(mockRequestBuilder)
     reset(mockIndividualCheckRepository)
     reset(mockAuditService)
 
     when(mockIndividualCheckRepository.getCounter(idString)) thenReturn Future.successful(0)
-
     when(mockIndividualCheckRepository.getCounter(maxAttemptsIdString)) thenReturn Future.successful(3)
-
     when(mockIndividualCheckRepository.incrementCounter(any())) thenReturn Future.successful(OperationSucceeded)
-
     when(mockIndividualCheckRepository.clearCounter(any())) thenReturn Future.successful(OperationSucceeded)
 
-    when {
-      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(successApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchSuccess.as[IdMatchApiResponseSuccess])
+    when(mockAppConfig.serviceUrl).thenReturn("http://localhost:1234")
+    when(mockAppConfig.authBaseUrl).thenReturn("http://localhost:1234")
+    when(mockHttpClient.post(any())(any())).thenReturn(mockRequestBuilder)
+    when(mockRequestBuilder.withBody(any())(any(), any(), any())).thenReturn(mockRequestBuilder)
+    when(mockRequestBuilder.setHeader(any())).thenReturn(mockRequestBuilder)
 
-    when {
-      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(failureApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchFailure.as[IdMatchApiResponseSuccess])
-
-    when {
-      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(notFoundApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(NinoNotFound)
-
-    when {
-      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(serviceUnavailableApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(DownstreamServiceUnavailable)
-
-    when {
-      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(internalServerErrorApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(DownstreamServerError)
 
   }
 }
