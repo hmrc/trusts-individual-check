@@ -62,8 +62,6 @@ class BaseSpec extends AnyWordSpec
 
   private val bodyParsers = stubControllerComponents().parsers.defaultBodyParser
 
-  lazy val application: Application = applicationBuilder().build()
-
   def applicationBuilder(): GuiceApplicationBuilder = {
     new GuiceApplicationBuilder()
       .overrides(

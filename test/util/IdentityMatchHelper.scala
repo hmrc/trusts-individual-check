@@ -27,13 +27,9 @@ import play.api.libs.json.{JsValue, Json}
 import repositories.IndividualCheckRepository
 import services.AuditService
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
-import uk.gov.hmrc.http.HttpClient
-
 import scala.concurrent.{ExecutionContext, Future}
 
-trait IdentityMatchHelper extends BaseSpec with MockitoSugar with BeforeAndAfterEach { this: Suite =>
-
-  val httpClient: HttpClient = mock[HttpClient]
+trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: Suite =>
 
   implicit lazy val ec: ExecutionContext = ExecutionContext.Implicits.global
 
@@ -140,6 +136,7 @@ trait IdentityMatchHelper extends BaseSpec with MockitoSugar with BeforeAndAfter
 
     when(mockAppConfig.serviceUrl).thenReturn("http://localhost:1234")
     when(mockAppConfig.authBaseUrl).thenReturn("http://localhost:1234")
+
     when(mockHttpClient.post(any())(any())).thenReturn(mockRequestBuilder)
     when(mockRequestBuilder.withBody(any())(any(), any(), any())).thenReturn(mockRequestBuilder)
     when(mockRequestBuilder.setHeader(any())).thenReturn(mockRequestBuilder)

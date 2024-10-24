@@ -26,9 +26,10 @@ import play.api.Application
 import play.api.inject.bind
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import repositories.IndividualCheckRepository
-import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.HttpClient
 import util.{BaseSpec, IdentityMatchHelper}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
 
@@ -37,7 +38,7 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
 
   override lazy val application: Application = applicationBuilder()
     .overrides(
-      bind[HttpClientV2].toInstance(mockHttpClient),
+      bind[HttpClient].toInstance(httpClient),
       bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository),
       bind[AuditService].toInstance(mockAuditService)
     ).build()

@@ -27,7 +27,7 @@ import play.api.test.Helpers._
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import repositories.IndividualCheckRepository
 import services.IdentityMatchService
-import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.HttpClient
 import util.{BaseSpec, IdentityMatchHelper}
 
 import scala.concurrent.Future
@@ -43,7 +43,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
   override lazy val app: Application = applicationBuilder()
     .overrides(bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository))
-    .overrides(bind[HttpClientV2].toInstance(mockHttpClient)).build()
+    .overrides(bind[HttpClient].toInstance(httpClient)).build()
 
   "IndividualCheckController" when {
 
