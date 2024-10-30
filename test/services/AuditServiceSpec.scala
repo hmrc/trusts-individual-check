@@ -24,8 +24,6 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import util.BaseSpec
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 class AuditServiceSpec extends BaseSpec {
 
   val sessionId = "XXX1234567890"

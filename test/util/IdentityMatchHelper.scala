@@ -16,35 +16,30 @@
 
 package util
 
+import izumi.reflect.Tag
 import models.api1585._
 import models.{IdMatchRequest, IdMatchResponse, OperationSucceeded}
 import org.mockito.ArgumentMatchers.{any, eq => mockEq}
 import org.mockito.Mockito.{reset, when}
-import org.scalatest.{BeforeAndAfterEach, Suite}
-import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsValue, Json}
+import play.api.libs.ws.BodyWritable
 import repositories.IndividualCheckRepository
 import services.AuditService
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.client.HttpClientV2
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import java.net.URL
+import scala.concurrent.{ExecutionContext, Future}
 
-trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: Suite =>
+trait IdentityMatchHelper extends BaseSpec {
 
-  val httpClient: HttpClient = mock[HttpClient]
-
+  val mockHttpClient: HttpClientV2 = mock[HttpClientV2]
   val mockIndividualCheckRepository: IndividualCheckRepository = mock[IndividualCheckRepository]
   val mockAuditService: AuditService = mock[AuditService]
 
   val idString = "IDSTRING"
-
   val maxAttemptsIdString = "MAX ATTEMPTS"
-
   val matchSuccessBody = """{"individualMatch":true}"""
-
   val matchSuccess: JsValue = Json.parse(matchSuccessBody)
-
   val matchFailure: JsValue = Json.parse("""{"individualMatch":false}""")
 
   val internalServerErrorBody: String =
@@ -124,39 +119,51 @@ trait IdentityMatchHelper extends MockitoSugar with BeforeAndAfterEach { this: S
     IdMatchRequest(maxAttemptsIdString, "AB123456A", "Name", "Name", "2000-01-01")
 
 
-  override def beforeEach(): Unit = {
+  def beforeEach(): Unit = {
 
-    reset(httpClient)
+    reset(mockHttpClient)
     reset(mockIndividualCheckRepository)
     reset(mockAuditService)
 
     when(mockIndividualCheckRepository.getCounter(idString)) thenReturn Future.successful(0)
-
     when(mockIndividualCheckRepository.getCounter(maxAttemptsIdString)) thenReturn Future.successful(3)
-
     when(mockIndividualCheckRepository.incrementCounter(any())) thenReturn Future.successful(OperationSucceeded)
-
     when(mockIndividualCheckRepository.clearCounter(any())) thenReturn Future.successful(OperationSucceeded)
 
     when {
-      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(successApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchSuccess.as[IdMatchApiResponseSuccess])
+      mockHttpClient
+        .post(any[URL])
+        .withBody(mockEq(successApiRequest))(any[BodyWritable[IdMatchApiRequest]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
+        .execute[IdMatchApiResponse](any(), any())
+    } thenReturn Future.successful(matchSuccess.as[IdMatchApiResponseSuccess])
 
     when {
-      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(failureApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(matchFailure.as[IdMatchApiResponseSuccess])
+      mockHttpClient
+        .post(any[URL])
+        .withBody(mockEq(successApiRequest))(any[BodyWritable[IdMatchApiRequest]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
+        .execute[IdMatchApiResponse](any(), any())
+    } thenReturn Future.successful(matchFailure.as[IdMatchApiResponseSuccess])
 
     when {
-      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(notFoundApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(NinoNotFound)
+      mockHttpClient
+        .post(any[URL])
+        .withBody(mockEq(successApiRequest))(any[BodyWritable[IdMatchApiRequest]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
+        .execute[IdMatchApiResponse](any(), any())
+    } thenReturn Future.successful(NinoNotFound)
 
     when {
-      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(serviceUnavailableApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(DownstreamServiceUnavailable)
+      mockHttpClient
+        .post(any[URL])
+        .withBody(mockEq(successApiRequest))(any[BodyWritable[IdMatchApiRequest]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
+        .execute[IdMatchApiResponse](any(), any())
+    } thenReturn Future.successful(DownstreamServiceUnavailable)
 
     when {
-      httpClient.POST[IdMatchApiRequest, IdMatchApiResponse](any(), mockEq(internalServerErrorApiRequest), any())(any(), any(), any(), any())
-    } thenReturn Future(DownstreamServerError)
-
+      mockHttpClient
+        .post(any[URL])
+        .withBody(mockEq(successApiRequest))(any[BodyWritable[IdMatchApiRequest]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
+        .execute[IdMatchApiResponse](any(), any())
+    } thenReturn Future.successful(DownstreamServerError)
   }
 }
+

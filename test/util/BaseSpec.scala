@@ -41,6 +41,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.bind
+import play.api.inject.Injector
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
@@ -48,7 +49,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AffinityGroup.Organisation
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.ExecutionContext.Implicits._
+import scala.concurrent.ExecutionContext
 
 class BaseSpec extends AnyWordSpec
   with Matchers
@@ -58,7 +59,9 @@ class BaseSpec extends AnyWordSpec
   with GuiceOneServerPerSuite
   with Inside {
 
+  lazy val injector: Injector = app.injector
   implicit lazy val hc: HeaderCarrier = HeaderCarrier()
+  implicit lazy val ec: ExecutionContext = injector.instanceOf[ExecutionContext]
 
   private val bodyParsers = stubControllerComponents().parsers.defaultBodyParser
 

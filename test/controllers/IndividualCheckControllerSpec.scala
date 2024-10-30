@@ -26,13 +26,13 @@ import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import repositories.IndividualCheckRepository
-import services.IdentityMatchService
-import uk.gov.hmrc.http.HttpClient
-import util.{BaseSpec, IdentityMatchHelper}
+import services.{AuditService, IdentityMatchService}
+import uk.gov.hmrc.http.client.HttpClientV2
+import util.IdentityMatchHelper
 
 import scala.concurrent.Future
 
-class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout with Matchers {
+class IndividualCheckControllerSpec extends IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
 
   private val service = mock[IdentityMatchService]
 
@@ -41,9 +41,12 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
   when(service.matchId(any())(any(), any()))
     .thenReturn(Future.successful(Right(IdMatchResponse(id, idMatch = true))))
 
-  override lazy val app: Application = applicationBuilder()
-    .overrides(bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository))
-    .overrides(bind[HttpClient].toInstance(httpClient)).build()
+  override lazy val application: Application = applicationBuilder()
+    .overrides(
+      bind[HttpClientV2].toInstance(mockHttpClient),
+      bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository),
+      bind[AuditService].toInstance(mockAuditService)
+    ).build()
 
   "IndividualCheckController" when {
 
