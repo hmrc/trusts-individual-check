@@ -25,7 +25,7 @@ import play.api.http.HeaderNames
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import services.AuditService
 import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
-import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 import utils.Session
 
 import java.util.UUID
@@ -65,9 +65,11 @@ class IdentityMatchConnector @Inject()(
 
     Json.toJson(request).validate[IdMatchApiRequest] match {
       case JsSuccess(validRequest, _) =>
-        http
-          .post(url"$postUrl")
-          .setHeader(headers(correlationId): _*)
+        val x: RequestBuilder = http.post(url"$postUrl")
+
+        val y = x.setHeader(headers(correlationId): _*)
+
+         y
           .withBody(Json.toJson(validRequest))
           .execute[IdMatchApiResponse]
 
