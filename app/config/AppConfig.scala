@@ -34,5 +34,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig)
   val idMatchEndpoint:String = s"${servicesConfig.baseUrl("individual-match")}/individuals/match"
 
   val maxIdAttempts: Int = config.get[Int]("individual-match.max-attempts")
+  val serviceUrl: String = servicesConfig.baseUrl("individual-match")
+
 
 }

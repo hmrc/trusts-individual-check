@@ -33,12 +33,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait IdentityMatchHelper extends BaseSpec {
 
-  val mockHttpClient: HttpClientV2 = mock[HttpClientV2]
-  val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
-  val mockIndividualCheckRepository: IndividualCheckRepository = mock[IndividualCheckRepository]
-  val mockAuditService: AuditService = mock[AuditService]
-  val mockAppConfig: AppConfig = mock[AppConfig]
-
 
   val idString = "IDSTRING"
   val maxAttemptsIdString = "MAX ATTEMPTS"
@@ -84,7 +78,7 @@ trait IdentityMatchHelper extends BaseSpec {
   val serviceUnavailableError: JsValue = Json.parse(serviceUnavailableErrorBody)
 
   val successRequest: IdMatchRequest =
-    IdMatchRequest(idString, "AB123456A", "Name", "Name", "2000-01-01")
+    IdMatchRequest(idString, "AB123456A", "Bob", "Success", "2000-01-01")
 
   val successApiRequest: IdMatchApiRequest =
     IdMatchApiRequest(successRequest.nino, successRequest.surname, successRequest.forename, successRequest.birthDate)
@@ -93,7 +87,7 @@ trait IdentityMatchHelper extends BaseSpec {
     IdMatchResponse(idString, idMatch = true)
 
   val failureRequest: IdMatchRequest =
-    IdMatchRequest(idString, "AB123456B", "Name", "Name", "2000-01-01")
+    IdMatchRequest(idString, "AB123456B", "Jim", "Failure", "2000-01-01")
 
   val failureApiRequest: IdMatchApiRequest =
     IdMatchApiRequest(failureRequest.nino, failureRequest.surname, failureRequest.forename, failureRequest.birthDate)
@@ -102,7 +96,9 @@ trait IdentityMatchHelper extends BaseSpec {
     IdMatchResponse(idString, idMatch = false)
 
   val notFoundRequest: IdMatchRequest =
-    IdMatchRequest(idString, "AB123456C", "Name", "Name", "2000-01-01")
+    IdMatchRequest(idString, "AB123456C", "Terry", "NotFound", "2000-01-01")
+
+  // {"nino":"AB123456C","surname":"Name","forename":"Name","birthDate":"2000-01-01"}
 
   val serviceUnavailableRequest: IdMatchRequest =
     IdMatchRequest(idString, "AB123456C", "Unavailable", "Service", "2000-01-01")
@@ -119,110 +115,82 @@ trait IdentityMatchHelper extends BaseSpec {
   val internalServerErrorApiRequest: IdMatchApiRequest =
     IdMatchApiRequest(internalServerErrorRequest.nino, "Error", "Service", internalServerErrorRequest.birthDate)
 
-  val maxAttemptsRequest:IdMatchRequest =
-    IdMatchRequest(maxAttemptsIdString, "AB123456A", "Name", "Name", "2000-01-01")
+  val maxAttemptsRequest: IdMatchRequest =
+    IdMatchRequest(maxAttemptsIdString, "AB123456A", "Maximo", "Attemptio", "2000-01-01")
 
 
-  def beforeEach(): Unit = {
-
-    reset(mockHttpClient)
-    reset(mockIndividualCheckRepository)
-    reset(mockRequestBuilder)
-    reset(mockAuditService)
-
-    when(mockIndividualCheckRepository.getCounter(idString)) thenReturn Future.successful(0)
-    when(mockIndividualCheckRepository.getCounter(maxAttemptsIdString)) thenReturn Future.successful(3)
-    when(mockIndividualCheckRepository.incrementCounter(any())) thenReturn Future.successful(OperationSucceeded)
-    when(mockIndividualCheckRepository.clearCounter(any())) thenReturn Future.successful(OperationSucceeded)
-
-//  when(mockAppConfig.serviceUrl).thenReturn("http://localhost:1234")
-  when(mockAppConfig.authBaseUrl).thenReturn("http://localhost:1234")
-
-  when(mockHttpClient.post(any())(any())).thenReturn(mockRequestBuilder)
-  when(mockRequestBuilder.withBody(any())(any(), any(), any())).thenReturn(mockRequestBuilder)
-  when(mockRequestBuilder.setHeader(any())).thenReturn(mockRequestBuilder)
-
-  // 1
-  val mockRequestBuilderWithMatchSuccess = mock[RequestBuilder]
-  when(mockRequestBuilderWithMatchSuccess.execute[IdMatchApiResponseSuccess](any(), any()))
-    .thenReturn(Future.successful(matchSuccess.as[IdMatchApiResponseSuccess]))
-
-  when(
-    mockRequestBuilder.withBody(mockEq(successApiRequest))(any[BodyWritable[Any]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
-  ) thenReturn mockRequestBuilderWithMatchSuccess
-
-  // 2
-  val mockRequestBuilderWithMatchFailure = mock[RequestBuilder]
-  when(mockRequestBuilderWithMatchFailure.execute[IdMatchApiResponseSuccess](any(), any()))
-    .thenReturn(Future.successful(matchFailure.as[IdMatchApiResponseSuccess]))
-
-  when {
-    mockRequestBuilder.withBody(mockEq(failureApiRequest))(any[BodyWritable[Any]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
-  } thenReturn mockRequestBuilderWithMatchFailure
-
-  // 3
-  val mockRequestBuilderWithNotFound = mock[RequestBuilder]
-  when(mockRequestBuilderWithMatchFailure.execute[IdMatchApiResponse](any(), any()))
-    .thenReturn(Future.successful(NinoNotFound))
-
-  when {
-    mockRequestBuilder.withBody(mockEq(notFoundApiRequest))(any[BodyWritable[Any]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
-  } thenReturn mockRequestBuilderWithNotFound
-
-  // 4
-  val mockRequestBuilderWithDownstreamServiceUnavailable = mock[RequestBuilder]
-  when(mockRequestBuilderWithMatchFailure.execute[IdMatchApiResponse](any(), any()))
-    .thenReturn(Future.successful(DownstreamServiceUnavailable))
-
-  when {
-    mockRequestBuilder.withBody(mockEq(serviceUnavailableApiRequest))(any[BodyWritable[Any]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
-  } thenReturn mockRequestBuilderWithDownstreamServiceUnavailable
-
-  // 5
-  val mockRequestBuilderWithDownstreamServerError = mock[RequestBuilder]
-  when(mockRequestBuilderWithMatchFailure.execute[IdMatchApiResponse](any(), any()))
-    .thenReturn(Future.successful(DownstreamServerError))
-
-  when {
-    mockRequestBuilder.withBody(mockEq(serviceUnavailableApiRequest))(any[BodyWritable[Any]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
-  } thenReturn mockRequestBuilderWithDownstreamServerError
+//  val mockHttpClient: HttpClientV2 = mock[HttpClientV2]
+//  val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
+//  val mockIndividualCheckRepository: IndividualCheckRepository = mock[IndividualCheckRepository]
+//  val mockAuditService: AuditService = mock[AuditService]
+//  val mockAppConfig: AppConfig = mock[AppConfig]
 
 
+//  def beforeEach(): Unit = {
 
-  //    when {
-//      mockHttpClient
-//        .post(any[URL])
-//        .withBody(mockEq(successApiRequest))(any[BodyWritable[IdMatchApiRequest]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
-//        .execute[IdMatchApiResponse](any(), any())
-//    } thenReturn Future.successful(matchSuccess.as[IdMatchApiResponseSuccess])
+//    reset(mockHttpClient)
+//    reset(mockIndividualCheckRepository)
+//    reset(mockRequestBuilder)
+//    reset(mockAuditService)
+//
+//    when(mockIndividualCheckRepository.getCounter(idString)) thenReturn Future.successful(0)
+//    when(mockIndividualCheckRepository.getCounter(maxAttemptsIdString)) thenReturn Future.successful(3)
+//    when(mockIndividualCheckRepository.incrementCounter(any())) thenReturn Future.successful(OperationSucceeded)
+//    when(mockIndividualCheckRepository.clearCounter(any())) thenReturn Future.successful(OperationSucceeded)
+//
+//    when(mockAppConfig.serviceUrl).thenReturn("http://localhost:1234")
+//    when(mockAppConfig.authBaseUrl).thenReturn("http://localhost:1234")
+//
+//    when(mockHttpClient.post(any())(any())).thenReturn(mockRequestBuilder)
+//    when(mockRequestBuilder.withBody(any())(any(), any(), any())).thenReturn(mockRequestBuilder)
+//    when(mockRequestBuilder.setHeader(any())).thenReturn(mockRequestBuilder)
+
+//        val mockRequestBuilderWithMatchSuccess = mock[RequestBuilder]
+        // this would need to be done in each test
+//        when(mockRequestBuilder.execute[IdMatchApiResponseSuccess](any(), any()))
+//          .thenReturn(Future.successful(matchSuccess.as[IdMatchApiResponseSuccess]))
+//
+//        when(
+//          mockRequestBuilder.withBody(mockEq(Json.toJson(successApiRequest)))(any[BodyWritable[Any]], any[Tag[JsValue]], any[ExecutionContext])
+//        ) thenReturn {
+//          mockRequestBuilder
+//        }
+//
+//     //2
+//        when(mockRequestBuilder.execute[IdMatchApiResponseSuccess](any(), any()))
+//          .thenReturn(Future.successful(matchFailure.as[IdMatchApiResponseSuccess]))
+//
+//        when {
+//          mockRequestBuilder.withBody(mockEq(Json.toJson(failureApiRequest)))(any[BodyWritable[Any]], any[Tag[JsValue]], any[ExecutionContext])
+//        } thenReturn mockRequestBuilder
+
+    // 3
+    //    val mockRequestBuilderWithNotFound = mock[RequestBuilder]
+    //    when(mockRequestBuilderWithNotFound.execute[IdMatchApiResponse](any(), any()))
+    //      .thenReturn(Future.successful(NinoNotFound))
+    //
+    //    when {
+    //      mockRequestBuilder.withBody(mockEq(Json.toJson(notFoundApiRequest)))(any[BodyWritable[Any]], any[Tag[JsValue]], any[ExecutionContext])
+    //    } thenReturn mockRequestBuilderWithNotFound
+
+
+    // 4
+//    val mockRequestBuilderWithDownstreamServiceUnavailable = mock[RequestBuilder]
+//    when(mockRequestBuilderWithDownstreamServiceUnavailable.execute[IdMatchApiResponse](any(), any()))
+//      .thenReturn(Future.successful(DownstreamServiceUnavailable))
 //
 //    when {
-//      mockHttpClient
-//        .post(any[URL])
-//        .withBody(mockEq(successApiRequest))(any[BodyWritable[IdMatchApiRequest]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
-//        .execute[IdMatchApiResponse](any(), any())
-//    } thenReturn Future.successful(matchFailure.as[IdMatchApiResponseSuccess])
+//      mockRequestBuilder.withBody(mockEq(Json.toJson(serviceUnavailableApiRequest)))(any[BodyWritable[Any]], any[Tag[JsValue]], any[ExecutionContext])
+//    } thenReturn mockRequestBuilderWithDownstreamServiceUnavailable
+//
+//    // 5
+//    val mockRequestBuilderWithDownstreamServerError = mock[RequestBuilder]
+//    when(mockRequestBuilderWithDownstreamServerError.execute[IdMatchApiResponse](any(), any()))
+//      .thenReturn(Future.successful(DownstreamServerError))
 //
 //    when {
-//      mockHttpClient
-//        .post(any[URL])
-//        .withBody(mockEq(successApiRequest))(any[BodyWritable[IdMatchApiRequest]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
-//        .execute[IdMatchApiResponse](any(), any())
-//    } thenReturn Future.successful(NinoNotFound)
-//
-//    when {
-//      mockHttpClient
-//        .post(any[URL])
-//        .withBody(mockEq(successApiRequest))(any[BodyWritable[IdMatchApiRequest]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
-//        .execute[IdMatchApiResponse](any(), any())
-//    } thenReturn Future.successful(DownstreamServiceUnavailable)
-//
-//    when {
-//      mockHttpClient
-//        .post(any[URL])
-//        .withBody(mockEq(successApiRequest))(any[BodyWritable[IdMatchApiRequest]], any[Tag[IdMatchApiRequest]], any[ExecutionContext])
-//        .execute[IdMatchApiResponse](any(), any())
-//    } thenReturn Future.successful(DownstreamServerError)
-  }
+//      mockRequestBuilder.withBody(mockEq(Json.toJson(serviceUnavailableApiRequest)))(any[BodyWritable[Any]], any[Tag[JsValue]], any[ExecutionContext])
+//    } thenReturn mockRequestBuilderWithDownstreamServerError
+//  }
 }
 

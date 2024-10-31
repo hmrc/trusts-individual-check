@@ -32,6 +32,8 @@ package util
  * limitations under the License.
  */
 
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import controllers.actions.{FakeIdentifierAction, IdentifierAction}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
@@ -40,14 +42,17 @@ import org.scalatest.{BeforeAndAfter, Inside}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
+import play.api.http.Status.OK
 import play.api.inject.bind
 import play.api.inject.Injector
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AffinityGroup.Organisation
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.test.WireMockSupport
 
 import scala.concurrent.ExecutionContext
 
@@ -55,9 +60,10 @@ class BaseSpec extends AnyWordSpec
   with Matchers
   with ScalaFutures
   with MockitoSugar
-  with BeforeAndAfter
+//  with BeforeAndAfter
   with GuiceOneServerPerSuite
-  with Inside {
+  with Inside
+  with WireMockSupport {
 
   lazy val injector: Injector = app.injector
   implicit lazy val hc: HeaderCarrier = HeaderCarrier()
@@ -67,14 +73,19 @@ class BaseSpec extends AnyWordSpec
 
   lazy val application: Application = applicationBuilder().build()
 
+  val httpClientV2 = app.injector.instanceOf[HttpClientV2]
+
   def applicationBuilder(): GuiceApplicationBuilder = {
     new GuiceApplicationBuilder()
       .overrides(
-        bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, Organisation))
+        bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, Organisation)),
+        bind[HttpClientV2].toInstance(httpClientV2)
       )
       .configure(
-          "metrics.enabled" -> false,
-          "auditing.enabled" -> false
+        "metrics.enabled" -> false,
+        "auditing.enabled" -> false,
+        "microservice.services.auth.port" -> wireMockServer.port(),
+        "microservice.services.individual-match.port" -> wireMockServer.port(),
       )
   }
 
@@ -93,6 +104,13 @@ class BaseSpec extends AnyWordSpec
         .withBody(payload)
     }
   }
+
+  override def beforeAll(): Unit =
+    wireMockServer.start()
+
+  override def afterAll(): Unit =
+    wireMockServer.stop()
+
 }
 
 

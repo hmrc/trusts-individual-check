@@ -69,6 +69,9 @@ class IdentityMatchConnector @Inject()(
 
         val y = x.setHeader(headers(correlationId): _*)
 
+        val blah = Json.toJson(validRequest)
+        println(blah)
+
          y
           .withBody(Json.toJson(validRequest))
           .execute[IdMatchApiResponse]
