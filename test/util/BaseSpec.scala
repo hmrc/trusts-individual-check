@@ -86,6 +86,8 @@ class BaseSpec extends AnyWordSpec
         "auditing.enabled" -> false,
         "microservice.services.auth.port" -> wireMockServer.port(),
         "microservice.services.individual-match.port" -> wireMockServer.port(),
+        "play.ws.timeout.request" -> "120s"
+
       )
   }
 

@@ -65,14 +65,11 @@ class IdentityMatchConnector @Inject()(
 
     Json.toJson(request).validate[IdMatchApiRequest] match {
       case JsSuccess(validRequest, _) =>
-        val x: RequestBuilder = http.post(url"$postUrl")
-
-        val y = x.setHeader(headers(correlationId): _*)
-
         val blah = Json.toJson(validRequest)
         println(blah)
 
-         y
+        http.post(url"$postUrl")
+          .setHeader(headers(correlationId): _*)
           .withBody(Json.toJson(validRequest))
           .execute[IdMatchApiResponse]
 

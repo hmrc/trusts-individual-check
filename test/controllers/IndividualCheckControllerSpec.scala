@@ -53,7 +53,7 @@ class IndividualCheckControllerSpec extends IdentityMatchHelper with FutureAwait
           post(urlEqualTo(newUrl)).willReturn(
             aResponse()
               .withStatus(OK)
-              .withBody(Json.toJson(successRequest).toString())
+              .withBody(matchSuccessBody)
           )
         )
 
