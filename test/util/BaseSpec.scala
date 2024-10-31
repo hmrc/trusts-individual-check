@@ -104,10 +104,6 @@ class BaseSpec extends AnyWordSpec
     }
   }
 
-
-  override def beforeAll() = wireMockServer.start()
-  override def afterAll() = wireMockServer.stop()
-
 }
 
 

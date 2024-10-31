@@ -28,23 +28,22 @@ import play.api.http.Status._
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.DefaultAwaitTimeout
 import play.api.test.Helpers.CONTENT_TYPE
-import suite.{BaseSuite, WireMockHelper}
+import suite.BaseSuite
 import uk.gov.hmrc.http.HeaderCarrier
-
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.http.test.WireMockSupport
 
 class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
   with Matchers
   with GuiceOneAppPerSuite
   with ScalaFutures
   with DefaultAwaitTimeout
-  with WireMockHelper
+  with WireMockSupport
   with IntegrationPatience
   with EitherValues {
 
   private def applicationBuilder(): GuiceApplicationBuilder = new GuiceApplicationBuilder()
     .configure(
-      "microservice.services.individual-match.port" -> server.port(),
+      "microservice.services.individual-match.port" -> wireMockServer.port(),
       "mongodb.uri" -> "mongodb://localhost:27017/individual-check-it",
       "metrics.enabled" -> false,
       "auditing.enabled" -> false
@@ -52,7 +51,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
   private lazy val application = applicationBuilder().build()
 
-  implicit val headerCarrier: HeaderCarrier = mock[HeaderCarrier]
+  implicit lazy val headerCarrier: HeaderCarrier = HeaderCarrier()
 
   private def identityMatchConnector = application.injector.instanceOf[IdentityMatchConnector]
 
@@ -62,7 +61,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "successful response is returned from the API" in {
 
-        server.stubFor(post(urlEqualTo("/individuals/match"))
+        wireMockServer.stubFor(post(urlEqualTo("/individuals/match"))
           .withHeader(CONTENT_TYPE, containing("application/json"))
           .withHeader("Environment", containing("dev"))
           .willReturn(
@@ -78,7 +77,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "error response is returned from the API" in {
 
-        server.stubFor(post(urlEqualTo("/individuals/match"))
+        wireMockServer.stubFor(post(urlEqualTo("/individuals/match"))
           .withHeader(CONTENT_TYPE, containing("application/json"))
           .withHeader("Environment", containing("dev"))
           .willReturn(
@@ -94,7 +93,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "internal server error is returned from the API" in {
 
-        server.stubFor(post(urlEqualTo("/individuals/match"))
+        wireMockServer.stubFor(post(urlEqualTo("/individuals/match"))
           .withHeader(CONTENT_TYPE, containing("application/json"))
           .withHeader("Environment", containing("dev"))
           .willReturn(
@@ -110,7 +109,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "service unavailable is returned from the API" in {
 
-        server.stubFor(post(urlEqualTo("/individuals/match"))
+        wireMockServer.stubFor(post(urlEqualTo("/individuals/match"))
           .withHeader(CONTENT_TYPE, containing("application/json"))
           .withHeader("Environment", containing("dev"))
           .willReturn(
