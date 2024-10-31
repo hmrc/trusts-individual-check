@@ -46,6 +46,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repositories.IndividualCheckRepository
+import services.AuditService
 import uk.gov.hmrc.auth.core.AffinityGroup.Organisation
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
@@ -69,12 +70,14 @@ class BaseSpec extends AnyWordSpec
   lazy val application: Application = applicationBuilder().build()
 
   val mockIndividualCheckRepository: IndividualCheckRepository = mock[IndividualCheckRepository]
+  val mockAuditService: AuditService = mock[AuditService]
 
   def applicationBuilder(): GuiceApplicationBuilder = {
     new GuiceApplicationBuilder()
       .overrides(
         bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, Organisation)),
-        bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository)
+        bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository),
+        bind[AuditService].toInstance(mockAuditService)
       )
       .configure(
         "metrics.enabled" -> false,
@@ -100,6 +103,10 @@ class BaseSpec extends AnyWordSpec
         .withBody(payload)
     }
   }
+
+
+  override def beforeAll() = wireMockServer.start()
+  override def afterAll() = wireMockServer.stop()
 
 }
 
