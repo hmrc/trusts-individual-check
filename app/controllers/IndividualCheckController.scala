@@ -41,10 +41,8 @@ class IndividualCheckController @Inject()(service: IdentityMatchService,
       Future(validateRequest(request)) flatMap { r =>
         service.matchId(r)
       } map processResponse recoverWith {
-          case e: LimitException =>
-            Future.successful(Forbidden(getError(e.getLocalizedMessage)))
-          case e: InvalidIdMatchRequest =>
-            Future.successful(BadRequest(getError(e.getLocalizedMessage)))
+          case e: LimitException => Future.successful(Forbidden(getError(e.getLocalizedMessage)))
+          case e: InvalidIdMatchRequest => Future.successful(BadRequest(getError(e.getLocalizedMessage)))
       }
   }
 
