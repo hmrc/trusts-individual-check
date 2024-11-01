@@ -17,18 +17,21 @@
 package controllers
 
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
-import models.{IdMatchRequest, OperationSucceeded}
+import models.{IdMatchRequest, IdMatchResponse, OperationSucceeded}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import play.api.http.Status.OK
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
-import util.IdentityMatchHelper
+import util.{BaseSpec, IdentityMatchHelper}
 
 import scala.concurrent.Future
 
-class IndividualCheckControllerSpec extends IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
+class IndividualCheckControllerSpec extends BaseSpec
+  with IdentityMatchHelper
+  with FutureAwaits
+  with DefaultAwaitTimeout {
 
   val individualsMatchUrl = "/individuals/match"
 
@@ -46,19 +49,19 @@ class IndividualCheckControllerSpec extends IdentityMatchHelper with FutureAwait
           post(urlEqualTo(individualsMatchUrl)).willReturn(
             aResponse()
               .withStatus(OK)
-              .withBody(matchSuccessBody)
+              .withBody(matchSuccess.toString())
           )
         )
 
         val individualCheckUrl = routes.IndividualCheckController.individualCheck().url
         val request =
           FakeRequest(POST, individualCheckUrl)
-            .withJsonBody(Json.toJson(successRequest))
+            .withJsonBody(Json.toJson(genericIdMatchRequest))
 
         val result = route(application, request).get
 
         status(result) mustBe OK
-        contentAsJson(result) mustBe Json.toJson(successResponse)
+        contentAsJson(result) mustBe Json.toJson(IdMatchResponse(idString, idMatch = true))
       }
 
       "return a response to an invalid request" in {
@@ -84,7 +87,7 @@ class IndividualCheckControllerSpec extends IdentityMatchHelper with FutureAwait
       "return not found if the API is unable to locate the nino" in {
 
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-          .withJsonBody(Json.toJson(notFoundRequest))
+          .withJsonBody(Json.toJson(genericIdMatchRequest))
 
         val result = route(application, request).get
 
@@ -102,7 +105,7 @@ class IndividualCheckControllerSpec extends IdentityMatchHelper with FutureAwait
       "return a service unavailable if API sends 503" in {
 
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-          .withJsonBody(Json.toJson(serviceUnavailableRequest))
+          .withJsonBody(Json.toJson(genericIdMatchRequest))
 
         wireMockServer.stubFor(
           post(urlEqualTo(individualsMatchUrl)).willReturn(
@@ -127,7 +130,7 @@ class IndividualCheckControllerSpec extends IdentityMatchHelper with FutureAwait
       "return a internal server error if API sends 500" in {
 
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-          .withJsonBody(Json.toJson(internalServerErrorRequest))
+          .withJsonBody(Json.toJson(genericIdMatchRequest))
 
         wireMockServer.stubFor(
           post(urlEqualTo(individualsMatchUrl)).willReturn(
@@ -151,10 +154,11 @@ class IndividualCheckControllerSpec extends IdentityMatchHelper with FutureAwait
 
       "return a specific response if API limit is reached" in {
 
-        when(mockIndividualCheckRepository.getCounter(any())).thenReturn(Future.successful(5))
+        val counterOverMaxAttempts = 5
+        when(mockIndividualCheckRepository.getCounter(any())).thenReturn(Future.successful(counterOverMaxAttempts))
 
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-          .withJsonBody(Json.toJson(maxAttemptsRequest))
+          .withJsonBody(Json.toJson(genericIdMatchRequest))
 
         wireMockServer.stubFor(
           post(urlEqualTo(individualsMatchUrl)).willReturn(

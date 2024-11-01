@@ -33,7 +33,6 @@ package util
  */
 
 import controllers.actions.{FakeIdentifierAction, IdentifierAction}
-import org.scalatest.Inside
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -58,7 +57,6 @@ class BaseSpec extends AnyWordSpec
   with ScalaFutures
   with MockitoSugar
   with GuiceOneServerPerSuite
-  with Inside
   with WireMockSupport {
 
   lazy val injector: Injector = app.injector
@@ -84,7 +82,6 @@ class BaseSpec extends AnyWordSpec
         "auditing.enabled" -> false,
         "microservice.services.auth.port" -> wireMockServer.port(),
         "microservice.services.individual-match.port" -> wireMockServer.port(),
-        "play.ws.timeout.request" -> "120s"
       )
   }
 

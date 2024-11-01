@@ -14,22 +14,6 @@
  * limitations under the License.
  */
 
-/*
- * Copyright 2024 HM Revenue & Customs
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package services
 
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
@@ -39,12 +23,16 @@ import models.{IdMatchResponse, OperationSucceeded}
 import org.mockito.ArgumentMatchers.{any, eq => mockEq}
 import org.mockito.Mockito.{reset, times, verify, when}
 import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-import util.IdentityMatchHelper
+import util.{BaseSpec, IdentityMatchHelper}
 
 import scala.concurrent.Future
 
-class IdentityMatchServiceSpec extends IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
+class IdentityMatchServiceSpec extends BaseSpec
+  with IdentityMatchHelper
+  with FutureAwaits
+  with DefaultAwaitTimeout {
 
   val individualsMatchUrl = "/individuals/match"
 
@@ -64,6 +52,7 @@ class IdentityMatchServiceSpec extends IdentityMatchHelper with FutureAwaits wit
     "parse response correctly" when {
 
       "success is returned" in {
+
         wireMockServer.stubFor(
           post(urlEqualTo(individualsMatchUrl)).willReturn(
             aResponse()
@@ -73,7 +62,7 @@ class IdentityMatchServiceSpec extends IdentityMatchHelper with FutureAwaits wit
         )
 
         shouldRespondWithSpecifiedMatch(
-          response = await(identityMatchService.matchId(successRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           matched = true
         )
 
@@ -82,6 +71,18 @@ class IdentityMatchServiceSpec extends IdentityMatchHelper with FutureAwaits wit
       }
 
       "nino is not found" in {
+
+        val matchError: JsValue = Json.parse(
+          """{
+            |  "failures": [
+            |    {
+            |      "code":"RESOURCE_NOT_FOUND",
+            |      "reason":"The remote endpoint has indicated that no data can be found."
+            |    }
+            |  ]
+            |}""".stripMargin
+        )
+
         wireMockServer.stubFor(
           post(urlEqualTo(individualsMatchUrl)).willReturn(
             aResponse()
@@ -91,7 +92,7 @@ class IdentityMatchServiceSpec extends IdentityMatchHelper with FutureAwaits wit
         )
 
         shouldRespondWithSpecifiedError(
-          response = await(identityMatchService.matchId(notFoundRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           error = NinoNotFound
         )
 
@@ -104,7 +105,7 @@ class IdentityMatchServiceSpec extends IdentityMatchHelper with FutureAwaits wit
         when(mockIndividualCheckRepository.getCounter(any())).thenReturn(Future.successful(5))
 
         intercept[LimitException] {
-          await(identityMatchService.matchId(maxAttemptsRequest))
+          await(identityMatchService.matchId(genericIdMatchRequest))
 
           verify(mockAuditService).auditIdentityMatchExceeded(any(), any(), any())(any())
         }
@@ -124,7 +125,7 @@ class IdentityMatchServiceSpec extends IdentityMatchHelper with FutureAwaits wit
         )
 
         shouldRespondWithSpecifiedMatch(
-          response = await(identityMatchService.matchId(failureRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           matched = false
         )
 
@@ -144,7 +145,7 @@ class IdentityMatchServiceSpec extends IdentityMatchHelper with FutureAwaits wit
         )
 
         shouldRespondWithSpecifiedError(
-          response = await(identityMatchService.matchId(notFoundRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           error = NinoNotFound
         )
 
@@ -165,14 +166,14 @@ class IdentityMatchServiceSpec extends IdentityMatchHelper with FutureAwaits wit
         )
 
         shouldRespondWithSpecifiedMatch(
-          response = await(identityMatchService.matchId(failureRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           matched = false
         )
 
         verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
 
         shouldRespondWithSpecifiedMatch(
-          response = await(identityMatchService.matchId(failureRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           matched = false
         )
         verify(mockIndividualCheckRepository, times(2)).incrementCounter(mockEq(idString))
@@ -186,7 +187,7 @@ class IdentityMatchServiceSpec extends IdentityMatchHelper with FutureAwaits wit
         )
 
         shouldRespondWithSpecifiedMatch(
-          response = await(identityMatchService.matchId(successRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           matched = true
         )
 

@@ -18,6 +18,7 @@ package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import exceptions.InvalidIdMatchRequest
+import models.IdMatchRequest
 import models.api1585._
 import org.scalatest.EitherValues
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -31,6 +32,8 @@ import play.api.test.Helpers.CONTENT_TYPE
 import suite.BaseSuite
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
+
+import scala.concurrent.Future
 
 class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
   with Matchers
@@ -55,6 +58,15 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
   private def identityMatchConnector = application.injector.instanceOf[IdentityMatchConnector]
 
+  private def getMatchIdResponse(request: IdMatchRequest, connector: IdentityMatchConnector): Future[IdMatchApiResponse] = {
+    connector.matchId(
+      request.nino,
+      request.surname,
+      request.forename,
+      request.birthDate
+    )
+  }
+
   "Identity Match Connector" should {
 
     "parse response correctly" when {
@@ -69,8 +81,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
               .withStatus(OK)
               .withBody(matchSuccessBody)))
 
-        val result =
-          identityMatchConnector.matchId(successRequest.nino, successRequest.surname, successRequest.forename, successRequest.birthDate)
+        val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
         result.futureValue mustBe IdMatchApiResponseSuccess(true)
       }
@@ -85,8 +96,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
               .withStatus(NOT_FOUND)
               .withBody(matchErrorBody)))
 
-        val result =
-          identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
+        val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
         result.futureValue mustBe NinoNotFound
       }
@@ -101,8 +111,10 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
               .withStatus(INTERNAL_SERVER_ERROR)
               .withBody(internalServerErrorBody)))
 
-        val result =
-          identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
+
+        val x: (String, String, String, String) => Future[IdMatchApiResponse] = identityMatchConnector.matchId _
+
+        val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
         result.futureValue mustBe DownstreamServerError
       }
@@ -117,8 +129,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
               .withStatus(SERVICE_UNAVAILABLE)
               .withBody(matchErrorBody)))
 
-        val result =
-          identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
+        val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
         result.futureValue mustBe DownstreamServiceUnavailable
       }
@@ -127,11 +138,16 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
         "the request fails validation" in {
 
-          val requestWithInvalidNino = IdMatchApiRequest(nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
+          val requestWithInvalidNino =
+            IdMatchApiRequest(nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
 
           val caught = intercept[InvalidIdMatchRequest] {
             identityMatchConnector.matchId(
-              requestWithInvalidNino.nino, requestWithInvalidNino.surname, requestWithInvalidNino.forename, requestWithInvalidNino.birthDate).futureValue
+              requestWithInvalidNino.nino,
+              requestWithInvalidNino.surname,
+              requestWithInvalidNino.forename,
+              requestWithInvalidNino.birthDate
+            ).futureValue
           }
 
           caught.getMessage mustBe "Could not validate the request"

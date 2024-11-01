@@ -47,10 +47,7 @@ trait BaseSuite extends MockitoSugar with BeforeAndAfterEach {
       |  ]
       |}""".stripMargin
 
-  val successRequest: IdMatchRequest =
+  val genericIdMatchRequest: IdMatchRequest =
     IdMatchRequest(idString, "AB123456A", "Name", "Name", "2000-01-01")
-
-  val notFoundRequest: IdMatchRequest =
-    IdMatchRequest(idString, "AB123456C", "Name", "Name", "2000-01-01")
 
 }
