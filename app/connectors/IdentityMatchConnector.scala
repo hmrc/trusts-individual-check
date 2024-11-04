@@ -25,7 +25,7 @@ import play.api.http.HeaderNames
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import services.AuditService
 import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
-import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
+import uk.gov.hmrc.http.client.HttpClientV2
 import utils.Session
 
 import java.util.UUID

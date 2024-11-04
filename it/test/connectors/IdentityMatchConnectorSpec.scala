@@ -111,9 +111,6 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
               .withStatus(INTERNAL_SERVER_ERROR)
               .withBody(internalServerErrorBody)))
 
-
-        val x: (String, String, String, String) => Future[IdMatchApiResponse] = identityMatchConnector.matchId _
-
         val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
         result.futureValue mustBe DownstreamServerError
