@@ -23,7 +23,6 @@ import models.api1585._
 import org.scalatest.EitherValues
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status._
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -32,10 +31,11 @@ import play.api.test.Helpers.CONTENT_TYPE
 import suite.BaseSuite
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
+import util.BaseSpec
 
 import scala.concurrent.Future
 
-class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
+class IdentityMatchConnectorSpec extends BaseSpec with BaseSuite
   with Matchers
   with GuiceOneAppPerSuite
   with ScalaFutures
@@ -43,6 +43,8 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
   with WireMockSupport
   with IntegrationPatience
   with EitherValues {
+
+  val individualsMatchUrl = "/individuals/match"
 
   private def applicationBuilder(): GuiceApplicationBuilder = new GuiceApplicationBuilder()
     .configure(
@@ -73,13 +75,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "successful response is returned from the API" in {
 
-        wireMockServer.stubFor(post(urlEqualTo("/individuals/match"))
-          .withHeader(CONTENT_TYPE, containing("application/json"))
-          .withHeader("Environment", containing("dev"))
-          .willReturn(
-            aResponse()
-              .withStatus(OK)
-              .withBody(matchSuccessBody)))
+        createMockForIndividualMatchUrlWithHeaders(OK, matchSuccessBody, individualsMatchUrl)
 
         val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
@@ -88,13 +84,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "error response is returned from the API" in {
 
-        wireMockServer.stubFor(post(urlEqualTo("/individuals/match"))
-          .withHeader(CONTENT_TYPE, containing("application/json"))
-          .withHeader("Environment", containing("dev"))
-          .willReturn(
-            aResponse()
-              .withStatus(NOT_FOUND)
-              .withBody(matchErrorBody)))
+        createMockForIndividualMatchUrlWithHeaders(NOT_FOUND, matchErrorBody, individualsMatchUrl)
 
         val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
@@ -103,13 +93,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "internal server error is returned from the API" in {
 
-        wireMockServer.stubFor(post(urlEqualTo("/individuals/match"))
-          .withHeader(CONTENT_TYPE, containing("application/json"))
-          .withHeader("Environment", containing("dev"))
-          .willReturn(
-            aResponse()
-              .withStatus(INTERNAL_SERVER_ERROR)
-              .withBody(internalServerErrorBody)))
+        createMockForIndividualMatchUrlWithHeaders(INTERNAL_SERVER_ERROR, internalServerErrorBody, individualsMatchUrl)
 
         val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
@@ -118,13 +102,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "service unavailable is returned from the API" in {
 
-        wireMockServer.stubFor(post(urlEqualTo("/individuals/match"))
-          .withHeader(CONTENT_TYPE, containing("application/json"))
-          .withHeader("Environment", containing("dev"))
-          .willReturn(
-            aResponse()
-              .withStatus(SERVICE_UNAVAILABLE)
-              .withBody(matchErrorBody)))
+        createMockForIndividualMatchUrlWithHeaders(SERVICE_UNAVAILABLE, matchErrorBody, individualsMatchUrl)
 
         val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 

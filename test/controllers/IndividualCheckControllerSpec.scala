@@ -16,7 +16,6 @@
 
 package controllers
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
 import models.{IdMatchRequest, IdMatchResponse, OperationSucceeded}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
@@ -45,13 +44,7 @@ class IndividualCheckControllerSpec extends BaseSpec
 
       "return a response to a valid request" in {
 
-        wireMockServer.stubFor(
-          post(urlEqualTo(individualsMatchUrl)).willReturn(
-            aResponse()
-              .withStatus(OK)
-              .withBody(matchSuccess.toString())
-          )
-        )
+        createMockForIndividualMatchUrl(OK, matchSuccess, individualsMatchUrl)
 
         val individualCheckUrl = routes.IndividualCheckController.individualCheck().url
         val request =
@@ -107,12 +100,7 @@ class IndividualCheckControllerSpec extends BaseSpec
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(genericIdMatchRequest))
 
-        wireMockServer.stubFor(
-          post(urlEqualTo(individualsMatchUrl)).willReturn(
-            aResponse()
-              .withStatus(SERVICE_UNAVAILABLE)
-          )
-        )
+        createMockForIndividualMatchUrlNoBody(SERVICE_UNAVAILABLE, individualsMatchUrl)
 
         val result = route(application, request).get
 
@@ -132,12 +120,7 @@ class IndividualCheckControllerSpec extends BaseSpec
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(genericIdMatchRequest))
 
-        wireMockServer.stubFor(
-          post(urlEqualTo(individualsMatchUrl)).willReturn(
-            aResponse()
-              .withStatus(INTERNAL_SERVER_ERROR)
-          )
-        )
+        createMockForIndividualMatchUrlNoBody(INTERNAL_SERVER_ERROR, individualsMatchUrl)
 
         val result = route(application, request).get
 
@@ -160,12 +143,7 @@ class IndividualCheckControllerSpec extends BaseSpec
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(genericIdMatchRequest))
 
-        wireMockServer.stubFor(
-          post(urlEqualTo(individualsMatchUrl)).willReturn(
-            aResponse()
-              .withStatus(FORBIDDEN)
-          )
-        )
+        createMockForIndividualMatchUrlNoBody(FORBIDDEN, individualsMatchUrl)
 
         val result = route(application, request).get
 
@@ -187,16 +165,9 @@ class IndividualCheckControllerSpec extends BaseSpec
 
           val id = "ID"
 
-          val url = s" /$id/failed-attempts"
-
           val numberOfFailedAttempts: Int = 1
 
-          wireMockServer.stubFor(
-            post(urlEqualTo(url)).willReturn(
-              aResponse()
-                .withStatus(OK)
-            )
-          )
+          createMockForIndividualMatchUrlNoBody(OK, individualsMatchUrl)
 
           when(mockIndividualCheckRepository.getCounter(any()))
             .thenReturn(Future.successful(numberOfFailedAttempts))

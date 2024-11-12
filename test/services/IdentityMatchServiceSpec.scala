@@ -16,7 +16,6 @@
 
 package services
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
 import exceptions.LimitException
 import models.api1585.{IdMatchApiError, NinoNotFound}
 import models.{IdMatchResponse, OperationSucceeded}
@@ -53,13 +52,7 @@ class IdentityMatchServiceSpec extends BaseSpec
 
       "success is returned" in {
 
-        wireMockServer.stubFor(
-          post(urlEqualTo(individualsMatchUrl)).willReturn(
-            aResponse()
-              .withStatus(OK)
-              .withBody(matchSuccess.toString())
-          )
-        )
+        createMockForIndividualMatchUrl(OK, matchSuccess, individualsMatchUrl)
 
         shouldRespondWithSpecifiedMatch(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -83,13 +76,7 @@ class IdentityMatchServiceSpec extends BaseSpec
             |}""".stripMargin
         )
 
-        wireMockServer.stubFor(
-          post(urlEqualTo(individualsMatchUrl)).willReturn(
-            aResponse()
-              .withStatus(NOT_FOUND)
-              .withBody(matchError.toString())
-          )
-        )
+        createMockForIndividualMatchUrl(NOT_FOUND, matchError, individualsMatchUrl)
 
         shouldRespondWithSpecifiedError(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -116,13 +103,7 @@ class IdentityMatchServiceSpec extends BaseSpec
 
       "not matched" in {
 
-        wireMockServer.stubFor(
-          post(urlEqualTo(individualsMatchUrl)).willReturn(
-            aResponse()
-              .withStatus(OK)
-              .withBody(matchFailure.toString())
-          )
-        )
+        createMockForIndividualMatchUrl(OK, matchFailure, individualsMatchUrl)
 
         shouldRespondWithSpecifiedMatch(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -136,13 +117,7 @@ class IdentityMatchServiceSpec extends BaseSpec
 
       "nino not found" in {
 
-        wireMockServer.stubFor(
-          post(urlEqualTo(individualsMatchUrl)).willReturn(
-            aResponse()
-              .withStatus(NOT_FOUND)
-              .withBody(matchFailure.toString())
-          )
-        )
+        createMockForIndividualMatchUrl(NOT_FOUND, matchFailure, individualsMatchUrl)
 
         shouldRespondWithSpecifiedError(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -157,13 +132,7 @@ class IdentityMatchServiceSpec extends BaseSpec
 
       "reset the counter on success" in {
 
-        wireMockServer.stubFor(
-          post(urlEqualTo(individualsMatchUrl)).willReturn(
-            aResponse()
-              .withStatus(OK)
-              .withBody(matchFailure.toString())
-          )
-        )
+        createMockForIndividualMatchUrl(OK, matchFailure, individualsMatchUrl)
 
         shouldRespondWithSpecifiedMatch(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -178,13 +147,7 @@ class IdentityMatchServiceSpec extends BaseSpec
         )
         verify(mockIndividualCheckRepository, times(2)).incrementCounter(mockEq(idString))
 
-        wireMockServer.stubFor(
-          post(urlEqualTo(individualsMatchUrl)).willReturn(
-            aResponse()
-              .withStatus(OK)
-              .withBody(matchSuccess.toString())
-          )
-        )
+        createMockForIndividualMatchUrl(OK, matchSuccess, individualsMatchUrl)
 
         shouldRespondWithSpecifiedMatch(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -214,6 +177,4 @@ class IdentityMatchServiceSpec extends BaseSpec
       case Left(errors) => errors mustBe error
     }
   }
-
 }
-
