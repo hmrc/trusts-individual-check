@@ -17,12 +17,14 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import exceptions.InvalidIdMatchRequest
 import models.IdMatchRequest
 import models.api1585._
 import org.scalatest.EitherValues
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status._
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -31,11 +33,10 @@ import play.api.test.Helpers.CONTENT_TYPE
 import suite.BaseSuite
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
-import util.BaseSpec
 
 import scala.concurrent.Future
 
-class IdentityMatchConnectorSpec extends BaseSpec with BaseSuite
+class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
   with Matchers
   with GuiceOneAppPerSuite
   with ScalaFutures
@@ -43,6 +44,19 @@ class IdentityMatchConnectorSpec extends BaseSpec with BaseSuite
   with WireMockSupport
   with IntegrationPatience
   with EitherValues {
+
+
+  def createMockForIndividualMatchUrlWithHeaders(returnStatus: Int, responseBody: String, individualsMatchUrl: String = "/individuals/match"): StubMapping =
+    wireMockServer.stubFor(
+      post(urlEqualTo(individualsMatchUrl))
+        .withHeader(CONTENT_TYPE, containing("application/json"))
+        .withHeader("Environment", containing("dev"))
+        .willReturn(
+          aResponse()
+            .withStatus(returnStatus)
+            .withBody(responseBody)
+        )
+    )
 
   val individualsMatchUrl = "/individuals/match"
 

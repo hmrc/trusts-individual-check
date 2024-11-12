@@ -104,18 +104,6 @@ class BaseSpec extends AnyWordSpec
       )
     )
 
-  def createMockForIndividualMatchUrlWithHeaders(returnStatus: Int, responseBody: String, individualsMatchUrl: String = "/individuals/match"): StubMapping =
-    wireMockServer.stubFor(
-      post(urlEqualTo(individualsMatchUrl))
-        .withHeader(CONTENT_TYPE, containing("application/json"))
-        .withHeader("Environment", containing("dev"))
-        .willReturn(
-          aResponse()
-            .withStatus(returnStatus)
-            .withBody(responseBody)
-        )
-    )
-
 }
 
 
