@@ -58,8 +58,6 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
         )
     )
 
-  val individualsMatchUrl = "/individuals/match"
-
   private def applicationBuilder(): GuiceApplicationBuilder = new GuiceApplicationBuilder()
     .configure(
       "microservice.services.individual-match.port" -> wireMockServer.port(),
@@ -89,7 +87,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "successful response is returned from the API" in {
 
-        createMockForIndividualMatchUrlWithHeaders(OK, matchSuccessBody, individualsMatchUrl)
+        createMockForIndividualMatchUrlWithHeaders(OK, matchSuccessBody)
 
         val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
@@ -98,7 +96,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "error response is returned from the API" in {
 
-        createMockForIndividualMatchUrlWithHeaders(NOT_FOUND, matchErrorBody, individualsMatchUrl)
+        createMockForIndividualMatchUrlWithHeaders(NOT_FOUND, matchErrorBody)
 
         val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
@@ -107,7 +105,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "internal server error is returned from the API" in {
 
-        createMockForIndividualMatchUrlWithHeaders(INTERNAL_SERVER_ERROR, internalServerErrorBody, individualsMatchUrl)
+        createMockForIndividualMatchUrlWithHeaders(INTERNAL_SERVER_ERROR, internalServerErrorBody)
 
         val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
@@ -116,7 +114,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "service unavailable is returned from the API" in {
 
-        createMockForIndividualMatchUrlWithHeaders(SERVICE_UNAVAILABLE, matchErrorBody, individualsMatchUrl)
+        createMockForIndividualMatchUrlWithHeaders(SERVICE_UNAVAILABLE, matchErrorBody)
 
         val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 

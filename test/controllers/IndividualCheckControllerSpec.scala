@@ -32,8 +32,6 @@ class IndividualCheckControllerSpec extends BaseSpec
   with FutureAwaits
   with DefaultAwaitTimeout {
 
-  val individualsMatchUrl = "/individuals/match"
-
   when(mockIndividualCheckRepository.incrementCounter(any())).thenReturn(Future.successful(OperationSucceeded))
   when(mockIndividualCheckRepository.getCounter(any())).thenReturn(Future.successful(0))
   when(mockIndividualCheckRepository.clearCounter(any())).thenReturn(Future.successful(OperationSucceeded))
@@ -44,7 +42,7 @@ class IndividualCheckControllerSpec extends BaseSpec
 
       "return a response to a valid request" in {
 
-        createMockForIndividualMatchUrl(OK, matchSuccess, individualsMatchUrl)
+        createMockForIndividualMatchUrl(OK, matchSuccess)
 
         val individualCheckUrl = routes.IndividualCheckController.individualCheck().url
         val request =
@@ -100,7 +98,7 @@ class IndividualCheckControllerSpec extends BaseSpec
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(genericIdMatchRequest))
 
-        createMockForIndividualMatchUrlNoBody(SERVICE_UNAVAILABLE, individualsMatchUrl)
+        createMockForIndividualMatchUrlNoBody(SERVICE_UNAVAILABLE)
 
         val result = route(application, request).get
 
@@ -120,7 +118,7 @@ class IndividualCheckControllerSpec extends BaseSpec
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(genericIdMatchRequest))
 
-        createMockForIndividualMatchUrlNoBody(INTERNAL_SERVER_ERROR, individualsMatchUrl)
+        createMockForIndividualMatchUrlNoBody(INTERNAL_SERVER_ERROR)
 
         val result = route(application, request).get
 
@@ -143,7 +141,7 @@ class IndividualCheckControllerSpec extends BaseSpec
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(genericIdMatchRequest))
 
-        createMockForIndividualMatchUrlNoBody(FORBIDDEN, individualsMatchUrl)
+        createMockForIndividualMatchUrlNoBody(FORBIDDEN)
 
         val result = route(application, request).get
 
@@ -167,7 +165,7 @@ class IndividualCheckControllerSpec extends BaseSpec
 
           val numberOfFailedAttempts: Int = 1
 
-          createMockForIndividualMatchUrlNoBody(OK, individualsMatchUrl)
+          createMockForIndividualMatchUrlNoBody(OK)
 
           when(mockIndividualCheckRepository.getCounter(any()))
             .thenReturn(Future.successful(numberOfFailedAttempts))

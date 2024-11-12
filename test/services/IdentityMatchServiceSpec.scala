@@ -33,8 +33,6 @@ class IdentityMatchServiceSpec extends BaseSpec
   with FutureAwaits
   with DefaultAwaitTimeout {
 
-  val individualsMatchUrl = "/individuals/match"
-
   lazy val identityMatchService: IdentityMatchService = application.injector.instanceOf[IdentityMatchService]
 
   override def beforeEach(): Unit = {
@@ -52,7 +50,7 @@ class IdentityMatchServiceSpec extends BaseSpec
 
       "success is returned" in {
 
-        createMockForIndividualMatchUrl(OK, matchSuccess, individualsMatchUrl)
+        createMockForIndividualMatchUrl(OK, matchSuccess)
 
         shouldRespondWithSpecifiedMatch(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -76,7 +74,7 @@ class IdentityMatchServiceSpec extends BaseSpec
             |}""".stripMargin
         )
 
-        createMockForIndividualMatchUrl(NOT_FOUND, matchError, individualsMatchUrl)
+        createMockForIndividualMatchUrl(NOT_FOUND, matchError)
 
         shouldRespondWithSpecifiedError(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -103,7 +101,7 @@ class IdentityMatchServiceSpec extends BaseSpec
 
       "not matched" in {
 
-        createMockForIndividualMatchUrl(OK, matchFailure, individualsMatchUrl)
+        createMockForIndividualMatchUrl(OK, matchFailure)
 
         shouldRespondWithSpecifiedMatch(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -117,7 +115,7 @@ class IdentityMatchServiceSpec extends BaseSpec
 
       "nino not found" in {
 
-        createMockForIndividualMatchUrl(NOT_FOUND, matchFailure, individualsMatchUrl)
+        createMockForIndividualMatchUrl(NOT_FOUND, matchFailure)
 
         shouldRespondWithSpecifiedError(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -132,7 +130,7 @@ class IdentityMatchServiceSpec extends BaseSpec
 
       "reset the counter on success" in {
 
-        createMockForIndividualMatchUrl(OK, matchFailure, individualsMatchUrl)
+        createMockForIndividualMatchUrl(OK, matchFailure)
 
         shouldRespondWithSpecifiedMatch(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
@@ -147,7 +145,7 @@ class IdentityMatchServiceSpec extends BaseSpec
         )
         verify(mockIndividualCheckRepository, times(2)).incrementCounter(mockEq(idString))
 
-        createMockForIndividualMatchUrl(OK, matchSuccess, individualsMatchUrl)
+        createMockForIndividualMatchUrl(OK, matchSuccess)
 
         shouldRespondWithSpecifiedMatch(
           response = await(identityMatchService.matchId(genericIdMatchRequest)),
