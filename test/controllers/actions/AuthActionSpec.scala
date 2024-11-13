@@ -45,8 +45,6 @@ class AuthActionSpec extends BaseSpec {
 
   private def actionToTest(authConnector: AuthConnector) = {
 
-    import scala.concurrent.ExecutionContext.Implicits._
-
     new AuthenticatedIdentifierAction(authConnector, application.injector.instanceOf[BodyParsers.Default])
   }
 

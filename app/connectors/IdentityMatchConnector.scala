@@ -24,14 +24,19 @@ import play.api.Logging
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import services.AuditService
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
+import uk.gov.hmrc.http.client.HttpClientV2
 import utils.Session
 
 import java.util.UUID
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class IdentityMatchConnector @Inject()(val http: HttpClient, auditService: AuditService, val appConfig: AppConfig) extends Logging {
+class IdentityMatchConnector @Inject()(
+                                        http: HttpClientV2,
+                                        auditService: AuditService,
+                                        appConfig: AppConfig
+                                      )(implicit ec: ExecutionContext) extends Logging {
 
   private val postUrl = appConfig.idMatchEndpoint
 
@@ -49,20 +54,23 @@ class IdentityMatchConnector @Inject()(val http: HttpClient, auditService: Audit
     )
 
   def matchId(nino: String, surname: String, forename: String, birthDate: String)
-             (implicit ec: ExecutionContext): Future[IdMatchApiResponse] = {
+             (implicit hc: HeaderCarrier): Future[IdMatchApiResponse] = {
 
     val request = IdMatchApiRequest(nino, surname, forename, birthDate)
 
     val correlationId = UUID.randomUUID().toString
 
-    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headers(correlationId))
-
     logger.info(s"[Session ID: ${Session.id(hc)}] Matching individual for correlationId: $correlationId")
     auditService.auditOutboundCall(request)
 
     Json.toJson(request).validate[IdMatchApiRequest] match {
-      case JsSuccess(_, _) =>
-        http.POST[IdMatchApiRequest, IdMatchApiResponse](postUrl, request)
+      case JsSuccess(validRequest, _) =>
+
+        http.post(url"$postUrl")
+          .setHeader(headers(correlationId): _*)
+          .withBody(Json.toJson(validRequest))
+          .execute[IdMatchApiResponse]
+
       case JsError(errors) =>
         logger.error(s"[Session ID: ${Session.id(hc)}] Unable to transform request for IFS due to ${JsError.toJson(errors)} for correlationId: $correlationId")
         throw new InvalidIdMatchRequest("Could not validate the request")

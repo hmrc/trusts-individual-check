@@ -16,34 +16,25 @@
 
 package controllers
 
-import models.{IdMatchRequest, IdMatchResponse}
+import models.{IdMatchRequest, IdMatchResponse, OperationSucceeded}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import org.scalatest.matchers.must.Matchers
-import play.api.Application
-import play.api.inject.bind
+import play.api.http.Status.OK
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
-import repositories.IndividualCheckRepository
-import services.IdentityMatchService
-import uk.gov.hmrc.http.HttpClient
 import util.{BaseSpec, IdentityMatchHelper}
 
 import scala.concurrent.Future
 
-class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout with Matchers {
+class IndividualCheckControllerSpec extends BaseSpec
+  with IdentityMatchHelper
+  with FutureAwaits
+  with DefaultAwaitTimeout {
 
-  private val service = mock[IdentityMatchService]
-
-  private val id = "ID"
-
-  when(service.matchId(any())(any(), any()))
-    .thenReturn(Future.successful(Right(IdMatchResponse(id, idMatch = true))))
-
-  override lazy val app: Application = applicationBuilder()
-    .overrides(bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository))
-    .overrides(bind[HttpClient].toInstance(httpClient)).build()
+  when(mockIndividualCheckRepository.incrementCounter(any())).thenReturn(Future.successful(OperationSucceeded))
+  when(mockIndividualCheckRepository.getCounter(any())).thenReturn(Future.successful(0))
+  when(mockIndividualCheckRepository.clearCounter(any())).thenReturn(Future.successful(OperationSucceeded))
 
   "IndividualCheckController" when {
 
@@ -51,14 +42,17 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
       "return a response to a valid request" in {
 
-        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-          .withJsonBody(Json.toJson(successRequest))
+        createMockForIndividualMatchUrl(OK, matchSuccess)
 
-        val result = route(app, request).get
+        val individualCheckUrl = routes.IndividualCheckController.individualCheck().url
+        val request =
+          FakeRequest(POST, individualCheckUrl)
+            .withJsonBody(Json.toJson(genericIdMatchRequest))
+
+        val result = route(application, request).get
 
         status(result) mustBe OK
-
-        contentAsJson(result) mustBe Json.toJson(successResponse)
+        contentAsJson(result) mustBe Json.toJson(IdMatchResponse(idString, idMatch = true))
       }
 
       "return a response to an invalid request" in {
@@ -68,7 +62,7 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(requestWithInvalidNino))
 
-        val result = route(app, request).get
+        val result = route(application, request).get
 
         status(result) mustBe BAD_REQUEST
 
@@ -84,9 +78,9 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
       "return not found if the API is unable to locate the nino" in {
 
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-          .withJsonBody(Json.toJson(notFoundRequest))
+          .withJsonBody(Json.toJson(genericIdMatchRequest))
 
-        val result = route(app, request).get
+        val result = route(application, request).get
 
         status(result) mustBe NOT_FOUND
 
@@ -102,9 +96,11 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
       "return a service unavailable if API sends 503" in {
 
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-          .withJsonBody(Json.toJson(serviceUnavailableRequest))
+          .withJsonBody(Json.toJson(genericIdMatchRequest))
 
-        val result = route(app, request).get
+        createMockForIndividualMatchUrlNoBody(SERVICE_UNAVAILABLE)
+
+        val result = route(application, request).get
 
         status(result) mustBe SERVICE_UNAVAILABLE
 
@@ -120,9 +116,11 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
       "return a internal server error if API sends 500" in {
 
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-          .withJsonBody(Json.toJson(internalServerErrorRequest))
+          .withJsonBody(Json.toJson(genericIdMatchRequest))
 
-        val result = route(app, request).get
+        createMockForIndividualMatchUrlNoBody(INTERNAL_SERVER_ERROR)
+
+        val result = route(application, request).get
 
         status(result) mustBe INTERNAL_SERVER_ERROR
 
@@ -137,10 +135,15 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
 
       "return a specific response if API limit is reached" in {
 
-        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
-          .withJsonBody(Json.toJson(maxAttemptsRequest))
+        val counterOverMaxAttempts = 5
+        when(mockIndividualCheckRepository.getCounter(any())).thenReturn(Future.successful(counterOverMaxAttempts))
 
-        val result = route(app, request).get
+        val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
+          .withJsonBody(Json.toJson(genericIdMatchRequest))
+
+        createMockForIndividualMatchUrlNoBody(FORBIDDEN)
+
+        val result = route(application, request).get
 
         status(result) mustBe FORBIDDEN
 
@@ -152,24 +155,29 @@ class IndividualCheckControllerSpec extends BaseSpec with IdentityMatchHelper wi
             | ]
             |}""".stripMargin))
       }
-    }
 
-    ".failedAttempts" should {
 
-      "return current failed attempt count for given id" in {
+      ".failedAttempts" should {
 
-        val numberOfFailedAttempts: Int = 1
+        "return current failed attempt count for given id" in {
 
-        when(mockIndividualCheckRepository.getCounter(any()))
-          .thenReturn(Future.successful(numberOfFailedAttempts))
+          val id = "ID"
 
-        val request = FakeRequest(GET, routes.IndividualCheckController.failedAttempts(id).url)
+          val numberOfFailedAttempts: Int = 1
 
-        val result = route(app, request).get
+          createMockForIndividualMatchUrlNoBody(OK)
 
-        status(result) mustBe OK
+          when(mockIndividualCheckRepository.getCounter(any()))
+            .thenReturn(Future.successful(numberOfFailedAttempts))
 
-        contentAsJson(result) mustBe Json.toJson(numberOfFailedAttempts)
+          val request = FakeRequest(GET, routes.IndividualCheckController.failedAttempts(id).url)
+
+          val result = route(application, request).get
+
+          status(result) mustBe OK
+
+          contentAsJson(result) mustBe Json.toJson(numberOfFailedAttempts)
+        }
       }
     }
   }

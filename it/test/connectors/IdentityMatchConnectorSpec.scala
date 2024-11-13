@@ -17,7 +17,9 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import exceptions.InvalidIdMatchRequest
+import models.IdMatchRequest
 import models.api1585._
 import org.scalatest.EitherValues
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -28,23 +30,37 @@ import play.api.http.Status._
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.DefaultAwaitTimeout
 import play.api.test.Helpers.CONTENT_TYPE
-import suite.{BaseSuite, WireMockHelper}
+import suite.BaseSuite
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.test.WireMockSupport
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
   with Matchers
   with GuiceOneAppPerSuite
   with ScalaFutures
   with DefaultAwaitTimeout
-  with WireMockHelper
+  with WireMockSupport
   with IntegrationPatience
   with EitherValues {
 
+
+  def createMockForIndividualMatchUrlWithHeaders(returnStatus: Int, responseBody: String, individualsMatchUrl: String = "/individuals/match"): StubMapping =
+    wireMockServer.stubFor(
+      post(urlEqualTo(individualsMatchUrl))
+        .withHeader(CONTENT_TYPE, containing("application/json"))
+        .withHeader("Environment", containing("dev"))
+        .willReturn(
+          aResponse()
+            .withStatus(returnStatus)
+            .withBody(responseBody)
+        )
+    )
+
   private def applicationBuilder(): GuiceApplicationBuilder = new GuiceApplicationBuilder()
     .configure(
-      "microservice.services.individual-match.port" -> server.port(),
+      "microservice.services.individual-match.port" -> wireMockServer.port(),
       "mongodb.uri" -> "mongodb://localhost:27017/individual-check-it",
       "metrics.enabled" -> false,
       "auditing.enabled" -> false
@@ -52,9 +68,18 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
   private lazy val application = applicationBuilder().build()
 
-  implicit val headerCarrier: HeaderCarrier = mock[HeaderCarrier]
+  implicit lazy val headerCarrier: HeaderCarrier = HeaderCarrier()
 
   private def identityMatchConnector = application.injector.instanceOf[IdentityMatchConnector]
+
+  private def getMatchIdResponse(request: IdMatchRequest, connector: IdentityMatchConnector): Future[IdMatchApiResponse] = {
+    connector.matchId(
+      request.nino,
+      request.surname,
+      request.forename,
+      request.birthDate
+    )
+  }
 
   "Identity Match Connector" should {
 
@@ -62,64 +87,36 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
       "successful response is returned from the API" in {
 
-        server.stubFor(post(urlEqualTo("/individuals/match"))
-          .withHeader(CONTENT_TYPE, containing("application/json"))
-          .withHeader("Environment", containing("dev"))
-          .willReturn(
-            aResponse()
-              .withStatus(OK)
-              .withBody(matchSuccessBody)))
+        createMockForIndividualMatchUrlWithHeaders(OK, matchSuccessBody)
 
-        val result =
-          identityMatchConnector.matchId(successRequest.nino, successRequest.surname, successRequest.forename, successRequest.birthDate)
+        val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
         result.futureValue mustBe IdMatchApiResponseSuccess(true)
       }
 
       "error response is returned from the API" in {
 
-        server.stubFor(post(urlEqualTo("/individuals/match"))
-          .withHeader(CONTENT_TYPE, containing("application/json"))
-          .withHeader("Environment", containing("dev"))
-          .willReturn(
-            aResponse()
-              .withStatus(NOT_FOUND)
-              .withBody(matchErrorBody)))
+        createMockForIndividualMatchUrlWithHeaders(NOT_FOUND, matchErrorBody)
 
-        val result =
-          identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
+        val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
         result.futureValue mustBe NinoNotFound
       }
 
       "internal server error is returned from the API" in {
 
-        server.stubFor(post(urlEqualTo("/individuals/match"))
-          .withHeader(CONTENT_TYPE, containing("application/json"))
-          .withHeader("Environment", containing("dev"))
-          .willReturn(
-            aResponse()
-              .withStatus(INTERNAL_SERVER_ERROR)
-              .withBody(internalServerErrorBody)))
+        createMockForIndividualMatchUrlWithHeaders(INTERNAL_SERVER_ERROR, internalServerErrorBody)
 
-        val result =
-          identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
+        val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
         result.futureValue mustBe DownstreamServerError
       }
 
       "service unavailable is returned from the API" in {
 
-        server.stubFor(post(urlEqualTo("/individuals/match"))
-          .withHeader(CONTENT_TYPE, containing("application/json"))
-          .withHeader("Environment", containing("dev"))
-          .willReturn(
-            aResponse()
-              .withStatus(SERVICE_UNAVAILABLE)
-              .withBody(matchErrorBody)))
+        createMockForIndividualMatchUrlWithHeaders(SERVICE_UNAVAILABLE, matchErrorBody)
 
-        val result =
-          identityMatchConnector.matchId(notFoundRequest.nino, notFoundRequest.surname, notFoundRequest.forename, notFoundRequest.birthDate)
+        val result = getMatchIdResponse(genericIdMatchRequest, identityMatchConnector)
 
         result.futureValue mustBe DownstreamServiceUnavailable
       }
@@ -128,11 +125,16 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
         "the request fails validation" in {
 
-          val requestWithInvalidNino = IdMatchApiRequest(nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
+          val requestWithInvalidNino =
+            IdMatchApiRequest(nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
 
           val caught = intercept[InvalidIdMatchRequest] {
             identityMatchConnector.matchId(
-              requestWithInvalidNino.nino, requestWithInvalidNino.surname, requestWithInvalidNino.forename, requestWithInvalidNino.birthDate).futureValue
+              requestWithInvalidNino.nino,
+              requestWithInvalidNino.surname,
+              requestWithInvalidNino.forename,
+              requestWithInvalidNino.birthDate
+            ).futureValue
           }
 
           caught.getMessage mustBe "Could not validate the request"

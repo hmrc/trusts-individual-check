@@ -16,60 +16,81 @@
 
 package services
 
-import connectors.IdentityMatchConnector
 import exceptions.LimitException
-import models.IdMatchResponse
 import models.api1585.{IdMatchApiError, NinoNotFound}
+import models.{IdMatchResponse, OperationSucceeded}
 import org.mockito.ArgumentMatchers.{any, eq => mockEq}
-import org.mockito.Mockito.{times, verify}
-import play.api.Application
-import play.api.inject.bind
+import org.mockito.Mockito.{reset, times, verify, when}
+import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-import repositories.IndividualCheckRepository
-import uk.gov.hmrc.http.HttpClient
 import util.{BaseSpec, IdentityMatchHelper}
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
+class IdentityMatchServiceSpec extends BaseSpec
+  with IdentityMatchHelper
+  with FutureAwaits
+  with DefaultAwaitTimeout {
 
-  val identityMatchConnector: IdentityMatchConnector = application.injector.instanceOf[IdentityMatchConnector]
-  val identityMatchService: IdentityMatchService = application.injector.instanceOf[IdentityMatchService]
+  lazy val identityMatchService: IdentityMatchService = application.injector.instanceOf[IdentityMatchService]
 
-  override lazy val application: Application = applicationBuilder()
-    .overrides(
-      bind[HttpClient].toInstance(httpClient),
-      bind[IndividualCheckRepository].toInstance(mockIndividualCheckRepository),
-      bind[AuditService].toInstance(mockAuditService)
-    ).build()
+  override def beforeEach(): Unit = {
+    reset(mockAuditService)
+    reset(mockIndividualCheckRepository)
+
+    when(mockIndividualCheckRepository.incrementCounter(any())).thenReturn(Future.successful(OperationSucceeded))
+    when(mockIndividualCheckRepository.getCounter(any())).thenReturn(Future.successful(0))
+    when(mockIndividualCheckRepository.clearCounter(any())).thenReturn(Future.successful(OperationSucceeded))
+  }
 
   "Identity Match Connector" should {
 
     "parse response correctly" when {
 
       "success is returned" in {
+
+        createMockForIndividualMatchUrl(OK, matchSuccess)
+
         shouldRespondWithSpecifiedMatch(
-          response = await(identityMatchService.matchId(successRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           matched = true
         )
 
-        verify(mockAuditService, times(1)).auditOutboundCall(any()) (any(),any())
+        verify(mockAuditService, times(1)).auditOutboundCall(any())(any(), any())
         verify(mockAuditService).auditIdentityMatched(any(), any(), mockEq("Match"))(any())
       }
 
       "nino is not found" in {
+
+        val matchError: JsValue = Json.parse(
+          """{
+            |  "failures": [
+            |    {
+            |      "code":"RESOURCE_NOT_FOUND",
+            |      "reason":"The remote endpoint has indicated that no data can be found."
+            |    }
+            |  ]
+            |}""".stripMargin
+        )
+
+        createMockForIndividualMatchUrl(NOT_FOUND, matchError)
+
         shouldRespondWithSpecifiedError(
-          response = await(identityMatchService.matchId(notFoundRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           error = NinoNotFound
         )
 
-        verify(mockAuditService, times(1)).auditOutboundCall(any()) (any(),any())
+        verify(mockAuditService, times(1)).auditOutboundCall(any())(any(), any())
         verify(mockAuditService).auditIdentityMatchApiError(any(), any(), any())(any())
       }
 
       "maximum number of attempts is reached" in {
-        intercept[LimitException]{
-          await(identityMatchService.matchId(maxAttemptsRequest))
+
+        when(mockIndividualCheckRepository.getCounter(any())).thenReturn(Future.successful(5))
+
+        intercept[LimitException] {
+          await(identityMatchService.matchId(genericIdMatchRequest))
 
           verify(mockAuditService).auditIdentityMatchExceeded(any(), any(), any())(any())
         }
@@ -80,54 +101,64 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
 
       "not matched" in {
 
+        createMockForIndividualMatchUrl(OK, matchFailure)
+
         shouldRespondWithSpecifiedMatch(
-          response = await(identityMatchService.matchId(failureRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           matched = false
         )
 
-        verify(mockAuditService, times(1)).auditOutboundCall(any()) (any(),any())
+        verify(mockAuditService, times(1)).auditOutboundCall(any())(any(), any())
         verify(mockAuditService).auditIdentityMatchAttempt(any(), any(), mockEq("NotMatched"))(any())
         verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
       }
 
       "nino not found" in {
 
+        createMockForIndividualMatchUrl(NOT_FOUND, matchFailure)
+
         shouldRespondWithSpecifiedError(
-          response = await(identityMatchService.matchId(notFoundRequest)),
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
           error = NinoNotFound
         )
 
-        verify(mockAuditService, times(1)).auditOutboundCall(any()) (any(),any())
+        verify(mockAuditService, times(1)).auditOutboundCall(any())(any(), any())
         verify(mockAuditService).auditIdentityMatchApiError(any(), any(), any())(any())
         verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
       }
-    }
 
-    "reset the counter on success" in {
 
-      shouldRespondWithSpecifiedMatch(
-        response = await(identityMatchService.matchId(failureRequest)),
-        matched = false
-      )
+      "reset the counter on success" in {
 
-      verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
+        createMockForIndividualMatchUrl(OK, matchFailure)
 
-      shouldRespondWithSpecifiedMatch(
-        response = await(identityMatchService.matchId(failureRequest)),
-        matched = false
-      )
+        shouldRespondWithSpecifiedMatch(
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
+          matched = false
+        )
 
-      verify(mockIndividualCheckRepository, times(2)).incrementCounter(mockEq(idString))
+        verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
 
-      shouldRespondWithSpecifiedMatch(
-        response = await(identityMatchService.matchId(successRequest)),
-        matched = true
-      )
+        shouldRespondWithSpecifiedMatch(
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
+          matched = false
+        )
+        verify(mockIndividualCheckRepository, times(2)).incrementCounter(mockEq(idString))
 
-      verify(mockIndividualCheckRepository, times(1)).clearCounter(mockEq(idString))
-      verify(mockAuditService, times(3)).auditOutboundCall(any()) (any(),any())
+        createMockForIndividualMatchUrl(OK, matchSuccess)
+
+        shouldRespondWithSpecifiedMatch(
+          response = await(identityMatchService.matchId(genericIdMatchRequest)),
+          matched = true
+        )
+
+        verify(mockIndividualCheckRepository, times(1)).clearCounter(mockEq(idString))
+        verify(mockAuditService, times(3)).auditOutboundCall(any())(any(), any())
+      }
+
     }
   }
+
 
   def shouldRespondWithSpecifiedMatch(response: Either[IdMatchApiError, IdMatchResponse], matched: Boolean): Unit = {
     response match {

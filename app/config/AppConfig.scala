@@ -24,15 +24,11 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
 
   val authBaseUrl: String = servicesConfig.baseUrl("auth")
-
   val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
   val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
-
   val idMatchEnv : String = config.get[String]("microservice.services.individual-match.environment")
   val idMatchToken : String = config.get[String]("microservice.services.individual-match.token")
-
   val idMatchEndpoint:String = s"${servicesConfig.baseUrl("individual-match")}/individuals/match"
-
   val maxIdAttempts: Int = config.get[Int]("individual-match.max-attempts")
 
 }
