@@ -17,14 +17,14 @@ import sbt.*
 
 object AppDependencies {
 
-  private val playBootstrapVersion = "9.5.0"
-  private val mongoVersion = "1.9.0"
+  private val playBootstrapVersion = "9.11.0"
+  private val mongoVersion = "2.6.0"
 
   private val compile = Seq(
     play.sbt.PlayImport.ws,
     "uk.gov.hmrc"             %% "bootstrap-backend-play-30"        % playBootstrapVersion,
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-30"               % mongoVersion,
-    "uk.gov.hmrc"             %% "domain-play-30"                   % "10.0.0"
+    "uk.gov.hmrc"             %% "domain-play-30"                   % "11.0.0"
   )
 
   private val test = Seq(
