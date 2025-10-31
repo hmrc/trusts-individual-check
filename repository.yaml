@@ -1,7 +1,9 @@
 digital-service: TRS / Trusts
-description:  This service is used individual check
+description:  This service is used for trusts individual check
 repoVisibility: public_0C3F0CE3E6E6448FAD341E7BFA50FCD333E06A20CFF05FCACE61154DDBBADF71
 type: Service
 service-type: Backend
 test-repositories:
   - trusts-integration-tests
+  - trusts-performance-tests
+  - trusts-acceptance-tests
