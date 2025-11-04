@@ -7,3 +7,5 @@ test-repositories:
   - trusts-integration-tests
   - trusts-performance-tests
   - trusts-acceptance-tests
+  - trusts-iv-perf-tests
+  - trusts-iv-ui-tests
