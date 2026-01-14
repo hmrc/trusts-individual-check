@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import play.api.test.Helpers.CONTENT_TYPE
 import suite.BaseSuite
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
+import uk.gov.hmrc.mongo.test.MongoSupport
 
 import scala.concurrent.Future
 
@@ -40,6 +41,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
   with Matchers
   with GuiceOneAppPerSuite
   with ScalaFutures
+  with MongoSupport
   with DefaultAwaitTimeout
   with WireMockSupport
   with IntegrationPatience
@@ -61,7 +63,7 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
   private def applicationBuilder(): GuiceApplicationBuilder = new GuiceApplicationBuilder()
     .configure(
       "microservice.services.individual-match.port" -> wireMockServer.port(),
-      "mongodb.uri" -> "mongodb://localhost:27017/individual-check-it",
+      "mongodb.uri" -> mongoUri,
       "metrics.enabled" -> false,
       "auditing.enabled" -> false
     )

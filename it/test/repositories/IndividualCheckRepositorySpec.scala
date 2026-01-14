@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,25 @@
 
 package repositories
 
-import models.IndividualCheckCount
+import models.{IndividualCheckCount, OperationSucceeded}
 import org.mongodb.scala.bson.BsonDocument
-import org.mongodb.scala.model.InsertManyOptions
 import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.{Matchers => MustMatchers}
+import play.api.Application
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.{await, defaultAwaitTimeout}
-import suite.MongoSuite
+import uk.gov.hmrc.mongo.test.MongoSupport
 
-class IndividualCheckRepositorySpec extends AnyFreeSpec with MustMatchers with MongoSuite with BeforeAndAfterEach {
+class IndividualCheckRepositorySpec extends AnyFreeSpec with MustMatchers with MongoSupport with BeforeAndAfterEach {
+
+  lazy val createApplication: Application = new GuiceApplicationBuilder()
+    .configure(
+      "mongodb.uri" -> mongoUri,
+      "metrics.enabled" -> false,
+      "auditing.enabled" -> false
+    )
+    .build()
 
   private val repository = createApplication.injector.instanceOf[IndividualCheckRepository]
 
@@ -43,8 +52,7 @@ class IndividualCheckRepositorySpec extends AnyFreeSpec with MustMatchers with M
         IndividualCheckCount("id2", 2)
       )
 
-      val insertOptions = new InsertManyOptions().ordered(false)
-      await(repository.collection.insertMany(existingRecords, insertOptions).toFuture())
+      await(repository.collection.insertMany(existingRecords).toFuture())
 
       await(repository.getCounter("id1")) mustEqual 1
       await(repository.getCounter("id2")) mustEqual 2
@@ -61,8 +69,7 @@ class IndividualCheckRepositorySpec extends AnyFreeSpec with MustMatchers with M
         IndividualCheckCount("id2", 2)
       )
 
-      val insertOptions = new InsertManyOptions().ordered(false)
-      await(repository.collection.insertMany(existingRecords, insertOptions).toFuture())
+      await(repository.collection.insertMany(existingRecords).toFuture())
 
       await(repository.setCounter("id1", 2))
       await(repository.setCounter("id2", 3))
@@ -82,8 +89,7 @@ class IndividualCheckRepositorySpec extends AnyFreeSpec with MustMatchers with M
         IndividualCheckCount("id1", 1)
       )
 
-      val insertOptions = new InsertManyOptions().ordered(false)
-      await(repository.collection.insertMany(existingRecords, insertOptions).toFuture())
+      await(repository.collection.insertMany(existingRecords).toFuture())
 
       await(repository.incrementCounter("id1"))
       await(repository.getCounter("id1")) mustEqual 2
@@ -102,11 +108,15 @@ class IndividualCheckRepositorySpec extends AnyFreeSpec with MustMatchers with M
         IndividualCheckCount("id1", 1)
       )
 
-      val insertOptions = new InsertManyOptions().ordered(false)
-      await(repository.collection.insertMany(existingRecords, insertOptions).toFuture())
+      await(repository.collection.insertMany(existingRecords).toFuture())
 
       await(repository.clearCounter("id1"))
       await(repository.getCounter("id1")) mustEqual 0
     }
+
+    "must succeed when clearing a non-existent id" in {
+      await(repository.clearCounter("non-existent-id")) mustEqual OperationSucceeded
+    }
+
   }
 }

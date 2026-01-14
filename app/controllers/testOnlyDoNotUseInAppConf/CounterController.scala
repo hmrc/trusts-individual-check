@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,27 @@
 
 package controllers.testOnlyDoNotUseInAppConf
 
-import javax.inject.{Inject, Singleton}
 import models._
 import play.api.mvc._
 import services.IdentityMatchService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext}
 
 @Singleton()
 class CounterController @Inject()(service: IdentityMatchService,
                                   cc: ControllerComponents
                                  )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
-  def clearCounter(id: String): Action[AnyContent] = Action.async { implicit request =>
-      service.clearCounter(id) map {
-        case OperationSucceeded => NoContent
-        case OperationFailed => InternalServerError
-      }
+  def clearCounter(id: String): Action[AnyContent] = Action { implicit request =>
+    val futureResult = service.clearCounter(id).map {
+      case OperationSucceeded => NoContent
+      case OperationFailed => InternalServerError
+    }
+
+    Await.result(futureResult, 30.seconds)
   }
 
 }

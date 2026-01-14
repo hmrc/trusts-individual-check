@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,7 @@ class IndividualCheckRepository @Inject()(mongo: MongoComponent, config: Configu
   }
 
   def clearCounter(id: String): Future[BinaryResult] = {
-    val res = collection.findOneAndDelete(equal("id", id)).toFutureOption()
-    binaryOutcome(res)
+    collection.deleteOne(equal("id", id)).head().map(_ => OperationSucceeded)
   }
 
   def incrementCounter(id: String): Future[BinaryResult] = {
@@ -81,13 +80,10 @@ class IndividualCheckRepository @Inject()(mongo: MongoComponent, config: Configu
 
     val res = collection.findOneAndUpdate(selector, modifier, updateOptions).toFutureOption()
 
-    binaryOutcome(res)
-  }
-
-  def binaryOutcome(result: Future[Option[IndividualCheckCount]]): Future[BinaryResult] = {
-    result.flatMap {
+    res.flatMap {
       case Some(_) => Future.successful(OperationSucceeded)
       case None => Future.successful(OperationFailed)
     }
   }
+
 }

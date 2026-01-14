@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ import sbt.*
 
 object AppDependencies {
 
-  private val playBootstrapVersion = "10.3.0"
-  private val mongoVersion = "2.10.0"
+  private val playBootstrapVersion = "10.5.0"
+  private val mongoVersion = "2.11.0"
 
   private val compile = Seq(
     play.sbt.PlayImport.ws,
