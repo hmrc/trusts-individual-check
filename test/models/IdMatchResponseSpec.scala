@@ -20,25 +20,25 @@ import org.scalatest.matchers.must.{Matchers => MustMatchers}
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsValue, Json}
 
-class IdMatchResponseSpec extends AnyWordSpec  with MustMatchers{
+class IdMatchResponseSpec extends AnyWordSpec with MustMatchers {
 
-  private val exampleSuccessJson:String = """{"id":"ID","idMatch":true}"""
+  private val exampleSuccessJson: String = """{"id":"ID","idMatch":true}"""
 
-  private val exampleSuccess:IdMatchResponse = IdMatchResponse(id = "ID", idMatch = true)
+  private val exampleSuccess: IdMatchResponse = IdMatchResponse(id = "ID", idMatch = true)
 
-  private val exampleErrorJson:String = """{"errors":["Something went wrong"]}"""
-  private val exampleErrorObj:IdMatchError = IdMatchError(errors = Seq("Something went wrong"))
+  private val exampleErrorJson: String      = """{"errors":["Something went wrong"]}"""
+  private val exampleErrorObj: IdMatchError = IdMatchError(errors = Seq("Something went wrong"))
 
   "successful Response" should {
 
     "read correctly" in {
       val json = Json.parse(exampleSuccessJson)
-      val obj = Json.fromJson[IdMatchResponse](json).get
+      val obj  = Json.fromJson[IdMatchResponse](json).get
       obj.mustBe(exampleSuccess)
     }
 
     "write correctly" in {
-      val json:JsValue = Json.toJson(exampleSuccess)
+      val json: JsValue = Json.toJson(exampleSuccess)
       Json.stringify(json).mustBe(exampleSuccessJson)
     }
   }
@@ -47,13 +47,14 @@ class IdMatchResponseSpec extends AnyWordSpec  with MustMatchers{
 
     "read correctly" in {
       val json = Json.parse(exampleErrorJson)
-      val obj = Json.fromJson[IdMatchError](json).get
+      val obj  = Json.fromJson[IdMatchError](json).get
       obj.mustBe(exampleErrorObj)
     }
 
     "write correctly" in {
-      val json:JsValue = Json.toJson(exampleErrorObj)
+      val json: JsValue = Json.toJson(exampleErrorObj)
       Json.stringify(json).mustBe(exampleErrorJson)
     }
   }
+
 }

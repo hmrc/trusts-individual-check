@@ -21,23 +21,24 @@ import org.scalatest.matchers.must.{Matchers => MustMatchers}
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.Json
 
-class IdMatchApiResponseSpec extends AnyWordSpec  with MustMatchers{
+class IdMatchApiResponseSpec extends AnyWordSpec with MustMatchers {
 
-  private val exampleSuccessJson:String = """{"individualMatch":true}"""
+  private val exampleSuccessJson: String = """{"individualMatch":true}"""
 
-  private val exampleSuccess:IdMatchApiResponseSuccess = IdMatchApiResponseSuccess(individualMatch = true)
+  private val exampleSuccess: IdMatchApiResponseSuccess = IdMatchApiResponseSuccess(individualMatch = true)
 
   "successful Response" should {
 
     "read correctly" in {
       val json = Json.parse(exampleSuccessJson)
-      val obj = Json.fromJson[IdMatchApiResponseSuccess](json).get
+      val obj  = Json.fromJson[IdMatchApiResponseSuccess](json).get
       obj.mustBe(exampleSuccess)
     }
 
     "write correctly" in {
-      val json:JsValue = Json.toJson(exampleSuccess)
+      val json: JsValue = Json.toJson(exampleSuccess)
       Json.stringify(json).mustBe(exampleSuccessJson)
     }
   }
+
 }

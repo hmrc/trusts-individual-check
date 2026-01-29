@@ -38,15 +38,16 @@ import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, containing, p
 
 import scala.concurrent.ExecutionContext
 
-class BaseSpec extends AnyWordSpec
-  with Matchers
-  with ScalaFutures
-  with MockitoSugar
-  with GuiceOneServerPerSuite
-  with WireMockSupport {
+class BaseSpec
+    extends AnyWordSpec
+    with Matchers
+    with ScalaFutures
+    with MockitoSugar
+    with GuiceOneServerPerSuite
+    with WireMockSupport {
 
-  lazy val injector: Injector = app.injector
-  implicit lazy val hc: HeaderCarrier = HeaderCarrier()
+  lazy val injector: Injector            = app.injector
+  implicit lazy val hc: HeaderCarrier    = HeaderCarrier()
   implicit lazy val ec: ExecutionContext = injector.instanceOf[ExecutionContext]
 
   private val bodyParsers = stubControllerComponents().parsers.defaultBodyParser
@@ -54,9 +55,9 @@ class BaseSpec extends AnyWordSpec
   lazy val application: Application = applicationBuilder().build()
 
   val mockIndividualCheckRepository: IndividualCheckRepository = mock[IndividualCheckRepository]
-  val mockAuditService: AuditService = mock[AuditService]
+  val mockAuditService: AuditService                           = mock[AuditService]
 
-  def applicationBuilder(): GuiceApplicationBuilder = {
+  def applicationBuilder(): GuiceApplicationBuilder =
     new GuiceApplicationBuilder()
       .overrides(
         bind[IdentifierAction].toInstance(new FakeIdentifierAction(bodyParsers, Organisation)),
@@ -64,18 +65,17 @@ class BaseSpec extends AnyWordSpec
         bind[AuditService].toInstance(mockAuditService)
       )
       .configure(
-        "metrics.enabled" -> false,
-        "auditing.enabled" -> false,
-        "microservice.services.auth.port" -> wireMockServer.port(),
+        "metrics.enabled"                             -> false,
+        "auditing.enabled"                            -> false,
+        "microservice.services.auth.port"             -> wireMockServer.port(),
         "microservice.services.individual-match.port" -> wireMockServer.port()
       )
-  }
 
   def fakeRequest: FakeRequest[JsValue] = FakeRequest("POST", "")
     .withHeaders(CONTENT_TYPE -> "application/json")
     .withBody(Json.parse("{}"))
 
-  def postRequestWithPayload(payload: JsValue, withDraftId: Boolean = true): FakeRequest[JsValue] = {
+  def postRequestWithPayload(payload: JsValue, withDraftId: Boolean = true): FakeRequest[JsValue] =
     if (withDraftId) {
       FakeRequest("POST", "/trusts/register")
         .withHeaders(CONTENT_TYPE -> "application/json")
@@ -85,9 +85,12 @@ class BaseSpec extends AnyWordSpec
         .withHeaders(CONTENT_TYPE -> "application/json")
         .withBody(payload)
     }
-  }
 
-  def createMockForIndividualMatchUrl(returnStatus: Int, errorResponse: JsValue, individualsMatchUrl: String = "/individuals/match"): StubMapping =
+  def createMockForIndividualMatchUrl(
+    returnStatus: Int,
+    errorResponse: JsValue,
+    individualsMatchUrl: String = "/individuals/match"
+  ): StubMapping =
     wireMockServer.stubFor(
       post(urlEqualTo(individualsMatchUrl)).willReturn(
         aResponse()
@@ -96,7 +99,10 @@ class BaseSpec extends AnyWordSpec
       )
     )
 
-  def createMockForIndividualMatchUrlNoBody(returnStatus: Int, individualsMatchUrl: String = "/individuals/match"): StubMapping =
+  def createMockForIndividualMatchUrlNoBody(
+    returnStatus: Int,
+    individualsMatchUrl: String = "/individuals/match"
+  ): StubMapping =
     wireMockServer.stubFor(
       post(urlEqualTo(individualsMatchUrl)).willReturn(
         aResponse()
@@ -105,9 +111,3 @@ class BaseSpec extends AnyWordSpec
     )
 
 }
-
-
-
-
-
-

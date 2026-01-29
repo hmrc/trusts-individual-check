@@ -28,10 +28,7 @@ import util.{BaseSpec, IdentityMatchHelper}
 
 import scala.concurrent.Future
 
-class IdentityMatchServiceSpec extends BaseSpec
-  with IdentityMatchHelper
-  with FutureAwaits
-  with DefaultAwaitTimeout {
+class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
 
   lazy val identityMatchService: IdentityMatchService = application.injector.instanceOf[IdentityMatchService]
 
@@ -127,7 +124,6 @@ class IdentityMatchServiceSpec extends BaseSpec
         verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
       }
 
-
       "reset the counter on success" in {
 
         createMockForIndividualMatchUrl(OK, matchFailure)
@@ -159,20 +155,21 @@ class IdentityMatchServiceSpec extends BaseSpec
     }
   }
 
-
-  def shouldRespondWithSpecifiedMatch(response: Either[IdMatchApiError, IdMatchResponse], matched: Boolean): Unit = {
+  def shouldRespondWithSpecifiedMatch(response: Either[IdMatchApiError, IdMatchResponse], matched: Boolean): Unit =
     response match {
-      case Left(error) => fail(s"Should not return errors: $error")
+      case Left(error)     => fail(s"Should not return errors: $error")
       case Right(response) =>
-        response.id mustBe idString
+        response.id      mustBe idString
         response.idMatch mustBe matched
     }
-  }
 
-  def shouldRespondWithSpecifiedError(response: Either[IdMatchApiError, IdMatchResponse], error: IdMatchApiError): Unit = {
+  def shouldRespondWithSpecifiedError(
+    response: Either[IdMatchApiError, IdMatchResponse],
+    error: IdMatchApiError
+  ): Unit =
     response match {
-      case Right(_) => fail("Should return errors")
+      case Right(_)     => fail("Should return errors")
       case Left(errors) => errors mustBe error
     }
-  }
+
 }

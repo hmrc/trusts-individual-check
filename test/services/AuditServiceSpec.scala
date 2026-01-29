@@ -33,7 +33,7 @@ class AuditServiceSpec extends BaseSpec {
     "send event when matched" in {
 
       val connector = mock[AuditConnector]
-      val service = new AuditService(connector)
+      val service   = new AuditService(connector)
 
       val idMatchRequest = IdMatchRequest(
         id = "id",
@@ -44,17 +44,17 @@ class AuditServiceSpec extends BaseSpec {
       )
 
       val request = Json.obj(
-        "forename" -> "forename",
-        "surname" -> "surname",
+        "forename"    -> "forename",
+        "surname"     -> "surname",
         "dateOfBirth" -> "01/01/1970",
-        "nino" -> "NH111111A"
+        "nino"        -> "NH111111A"
       )
 
       val response = Json.obj(
-        "response" -> "Match",
-        "responseMsg" -> "Matched.",
+        "response"          -> "Match",
+        "responseMsg"       -> "Matched.",
         "countOfTheAttempt" -> 2,
-        "isLocked" -> false
+        "isLocked"          -> false
       )
 
       service.auditIdentityMatched(
@@ -71,14 +71,15 @@ class AuditServiceSpec extends BaseSpec {
 
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
         equalTo("LeadTrusteeIdentityMatched"),
-        equalTo(expectedAuditData))(any(), any(), any())
+        equalTo(expectedAuditData)
+      )(any(), any(), any())
 
     }
 
     "send event when matching attempt failed" in {
 
       val connector = mock[AuditConnector]
-      val service = new AuditService(connector)
+      val service   = new AuditService(connector)
 
       val idMatchRequest = IdMatchRequest(
         id = "id",
@@ -89,23 +90,20 @@ class AuditServiceSpec extends BaseSpec {
       )
 
       val request = Json.obj(
-        "forename" -> "forename",
-        "surname" -> "surname",
+        "forename"    -> "forename",
+        "surname"     -> "surname",
         "dateOfBirth" -> "01/01/1970",
-        "nino" -> "NH111111A"
+        "nino"        -> "NH111111A"
       )
 
       val response = Json.obj(
-        "response" -> "NotMatched",
-        "responseMsg" -> "Match attempt.",
+        "response"          -> "NotMatched",
+        "responseMsg"       -> "Match attempt.",
         "countOfTheAttempt" -> 1,
-        "isLocked" -> false
+        "isLocked"          -> false
       )
 
-      service.auditIdentityMatchAttempt(
-        idMatchRequest,
-        0,
-        "NotMatched")
+      service.auditIdentityMatchAttempt(idMatchRequest, 0, "NotMatched")
 
       val expectedAuditData = GetTrustAuditEvent(
         request,
@@ -115,14 +113,15 @@ class AuditServiceSpec extends BaseSpec {
 
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
         equalTo("LeadTrusteeIdentityMatchAttempt"),
-        equalTo(expectedAuditData))(any(), any(), any())
+        equalTo(expectedAuditData)
+      )(any(), any(), any())
 
     }
 
     "send event when matching attempts exceeded" in {
 
       val connector = mock[AuditConnector]
-      val service = new AuditService(connector)
+      val service   = new AuditService(connector)
 
       val idMatchRequest = IdMatchRequest(
         id = "id",
@@ -133,17 +132,17 @@ class AuditServiceSpec extends BaseSpec {
       )
 
       val request = Json.obj(
-        "forename" -> "forename",
-        "surname" -> "surname",
+        "forename"    -> "forename",
+        "surname"     -> "surname",
         "dateOfBirth" -> "01/01/1970",
-        "nino" -> "NH111111A"
+        "nino"        -> "NH111111A"
       )
 
       val response = Json.obj(
-        "response" -> "NotMatched",
-        "responseMsg" -> "Max attempts exceeded.",
+        "response"          -> "NotMatched",
+        "responseMsg"       -> "Max attempts exceeded.",
         "countOfTheAttempt" -> 5,
-        "isLocked" -> true
+        "isLocked"          -> true
       )
 
       service.auditIdentityMatchExceeded(
@@ -160,15 +159,15 @@ class AuditServiceSpec extends BaseSpec {
 
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
         equalTo("LeadTrusteeIdentityMatchAttemptExceeded"),
-        equalTo(expectedAuditData))(any(), any(), any())
+        equalTo(expectedAuditData)
+      )(any(), any(), any())
 
     }
-
 
     "send event when match API error" in {
 
       val connector = mock[AuditConnector]
-      val service = new AuditService(connector)
+      val service   = new AuditService(connector)
 
       val idMatchRequest = IdMatchRequest(
         id = "id",
@@ -179,23 +178,20 @@ class AuditServiceSpec extends BaseSpec {
       )
 
       val request = Json.obj(
-        "forename" -> "forename",
-        "surname" -> "surname",
+        "forename"    -> "forename",
+        "surname"     -> "surname",
         "dateOfBirth" -> "01/01/1970",
-        "nino" -> "NH111111A"
+        "nino"        -> "NH111111A"
       )
 
       val response = Json.obj(
-        "response" -> "ErrorResponse",
-        "responseMsg" -> "Identity match api error.",
+        "response"          -> "ErrorResponse",
+        "responseMsg"       -> "Identity match api error.",
         "countOfTheAttempt" -> 2,
-        "isLocked" -> false
+        "isLocked"          -> false
       )
 
-      service.auditIdentityMatchApiError(
-        idMatchRequest,
-        1,
-        "ErrorResponse")
+      service.auditIdentityMatchApiError(idMatchRequest, 1, "ErrorResponse")
 
       val expectedAuditData = GetTrustAuditEvent(
         request,
@@ -205,7 +201,9 @@ class AuditServiceSpec extends BaseSpec {
 
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
         equalTo("LeadTrusteeIdentityMatchApiError"),
-        equalTo(expectedAuditData))(any(), any(), any())
+        equalTo(expectedAuditData)
+      )(any(), any(), any())
     }
   }
+
 }

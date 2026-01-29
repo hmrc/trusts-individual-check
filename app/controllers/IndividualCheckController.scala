@@ -31,57 +31,56 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
-class IndividualCheckController @Inject()(service: IdentityMatchService,
-                                          cc: ControllerComponents,
-                                          identify: IdentifierAction
-                                         )(implicit ec: ExecutionContext) extends BackendController(cc) with Logging {
+class IndividualCheckController @Inject() (
+  service: IdentityMatchService,
+  cc: ControllerComponents,
+  identify: IdentifierAction
+)(implicit ec: ExecutionContext)
+    extends BackendController(cc) with Logging {
 
-  def individualCheck(): Action[JsValue] = identify.async(parse.json) {
-    implicit request =>
-      Future(validateRequest(request)) flatMap { r =>
-        service.matchId(r)
-      } map processResponse recoverWith {
-          case e: LimitException => Future.successful(Forbidden(getError(e.getLocalizedMessage)))
-          case e: InvalidIdMatchRequest => Future.successful(BadRequest(getError(e.getLocalizedMessage)))
-      }
-  }
-
-  private def validateRequest(request: Request[JsValue])(implicit hc: HeaderCarrier): IdMatchRequest = {
-    request.body.validate[IdMatchRequest] match {
-      case JsSuccess(idRequest, _) => idRequest
-      case JsError(errors) =>
-        logger.error(s"[Session ID: ${Session.id(hc)}][Unable to validate payload due to ${JsError.toJson(errors)}]")
-        throw new InvalidIdMatchRequest(s"Could not validate the request")
+  def individualCheck(): Action[JsValue] = identify.async(parse.json) { implicit request =>
+    Future(validateRequest(request)) flatMap { r =>
+      service.matchId(r)
+    } map processResponse recoverWith {
+      case e: LimitException        => Future.successful(Forbidden(getError(e.getLocalizedMessage)))
+      case e: InvalidIdMatchRequest => Future.successful(BadRequest(getError(e.getLocalizedMessage)))
     }
   }
 
-  private def processResponse(response: Either[IdMatchApiError, IdMatchResponse]): Result = {
+  private def validateRequest(request: Request[JsValue])(implicit hc: HeaderCarrier): IdMatchRequest =
+    request.body.validate[IdMatchRequest] match {
+      case JsSuccess(idRequest, _) => idRequest
+      case JsError(errors)         =>
+        logger.error(s"[Session ID: ${Session.id(hc)}][Unable to validate payload due to ${JsError.toJson(errors)}]")
+        throw new InvalidIdMatchRequest(s"Could not validate the request")
+    }
+
+  private def processResponse(response: Either[IdMatchApiError, IdMatchResponse]): Result =
 
     response match {
-      case Left(DownstreamServerError) =>
+      case Left(DownstreamServerError)        =>
         val response = IdMatchError(Seq("IF is currently experiencing problems that require live service intervention"))
         InternalServerError(Json.toJson(response))
       case Left(DownstreamBadRequest(reason)) =>
         val response = IdMatchError(Seq(reason.reason))
         InternalServerError(Json.toJson(response))
-      case Left(NinoNotFound) =>
+      case Left(NinoNotFound)                 =>
         val response = IdMatchError(Seq("Dependent service indicated that no data can be found"))
         NotFound(Json.toJson(response))
       case Left(DownstreamServiceUnavailable) =>
         val response = IdMatchError(Seq("Dependent service is unavailable"))
         ServiceUnavailable(Json.toJson(response))
-      case Right(value) =>
+      case Right(value)                       =>
         Ok(Json.toJson(value))
     }
-  }
 
-  private def getError(msg: String): JsValue = {
+  private def getError(msg: String): JsValue =
     Json.toJson(IdMatchError(Seq(msg)))
-  }
 
   def failedAttempts(id: String): Action[AnyContent] = identify.async {
     service.getCounter(id) map { count =>
       Ok(Json.toJson(count))
     }
   }
+
 }

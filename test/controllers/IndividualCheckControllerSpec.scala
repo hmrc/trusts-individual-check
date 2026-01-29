@@ -27,10 +27,8 @@ import util.{BaseSpec, IdentityMatchHelper}
 
 import scala.concurrent.Future
 
-class IndividualCheckControllerSpec extends BaseSpec
-  with IdentityMatchHelper
-  with FutureAwaits
-  with DefaultAwaitTimeout {
+class IndividualCheckControllerSpec
+    extends BaseSpec with IdentityMatchHelper with FutureAwaits with DefaultAwaitTimeout {
 
   when(mockIndividualCheckRepository.incrementCounter(any())).thenReturn(Future.successful(OperationSucceeded))
   when(mockIndividualCheckRepository.getCounter(any())).thenReturn(Future.successful(0))
@@ -45,19 +43,20 @@ class IndividualCheckControllerSpec extends BaseSpec
         createMockForIndividualMatchUrl(OK, matchSuccess)
 
         val individualCheckUrl = routes.IndividualCheckController.individualCheck().url
-        val request =
+        val request            =
           FakeRequest(POST, individualCheckUrl)
             .withJsonBody(Json.toJson(genericIdMatchRequest))
 
         val result = route(application, request).get
 
-        status(result) mustBe OK
+        status(result)        mustBe OK
         contentAsJson(result) mustBe Json.toJson(IdMatchResponse(idString, idMatch = true))
       }
 
       "return a response to an invalid request" in {
 
-        val requestWithInvalidNino = IdMatchRequest(id = idString, nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
+        val requestWithInvalidNino =
+          IdMatchRequest(id = idString, nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
 
         val request = FakeRequest(POST, routes.IndividualCheckController.individualCheck().url)
           .withJsonBody(Json.toJson(requestWithInvalidNino))
@@ -66,8 +65,7 @@ class IndividualCheckControllerSpec extends BaseSpec
 
         status(result) mustBe BAD_REQUEST
 
-        contentAsJson(result) mustBe Json.toJson(Json.parse(
-          """
+        contentAsJson(result) mustBe Json.toJson(Json.parse("""
             |{
             | "errors": [
             |   "Could not validate the request"
@@ -84,8 +82,7 @@ class IndividualCheckControllerSpec extends BaseSpec
 
         status(result) mustBe NOT_FOUND
 
-        contentAsJson(result) mustBe Json.toJson(Json.parse(
-          """
+        contentAsJson(result) mustBe Json.toJson(Json.parse("""
             |{
             | "errors": [
             |   "Dependent service indicated that no data can be found"
@@ -104,8 +101,7 @@ class IndividualCheckControllerSpec extends BaseSpec
 
         status(result) mustBe SERVICE_UNAVAILABLE
 
-        contentAsJson(result) mustBe Json.toJson(Json.parse(
-          """
+        contentAsJson(result) mustBe Json.toJson(Json.parse("""
             |{
             | "errors": [
             |   "Dependent service is unavailable"
@@ -124,8 +120,7 @@ class IndividualCheckControllerSpec extends BaseSpec
 
         status(result) mustBe INTERNAL_SERVER_ERROR
 
-        contentAsJson(result) mustBe Json.toJson(Json.parse(
-          """
+        contentAsJson(result) mustBe Json.toJson(Json.parse("""
             |{
             | "errors": [
             |   "IF is currently experiencing problems that require live service intervention"
@@ -147,15 +142,13 @@ class IndividualCheckControllerSpec extends BaseSpec
 
         status(result) mustBe FORBIDDEN
 
-        contentAsJson(result) mustBe Json.toJson(Json.parse(
-          """
+        contentAsJson(result) mustBe Json.toJson(Json.parse("""
             |{
             | "errors": [
             |   "Individual check - retry limit reached (3)"
             | ]
             |}""".stripMargin))
       }
-
 
       ".failedAttempts" should {
 
@@ -181,4 +174,5 @@ class IndividualCheckControllerSpec extends BaseSpec
       }
     }
   }
+
 }

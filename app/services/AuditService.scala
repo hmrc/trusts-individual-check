@@ -25,12 +25,11 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 
-class AuditService @Inject()(auditConnector: AuditConnector)(implicit ec: ExecutionContext){
+class AuditService @Inject() (auditConnector: AuditConnector)(implicit ec: ExecutionContext) {
 
-  private def audit(event: String,
-            request: JsValue,
-            internalId: String,
-            response: JsValue)(implicit hc: HeaderCarrier): Unit = {
+  private def audit(event: String, request: JsValue, internalId: String, response: JsValue)(implicit
+    hc: HeaderCarrier
+  ): Unit = {
 
     val auditPayload = GetTrustAuditEvent(
       request = request,
@@ -44,25 +43,24 @@ class AuditService @Inject()(auditConnector: AuditConnector)(implicit ec: Execut
     )
   }
 
-  def auditIdentityMatchAttempt(idMatchRequest: IdMatchRequest,
-                                count: Int,
-                                idMatchResponse: String
-                               )(implicit hc: HeaderCarrier): Unit = {
+  def auditIdentityMatchAttempt(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(implicit
+    hc: HeaderCarrier
+  ): Unit = {
 
     val auditCount = count + 1
 
     val request = Json.obj(
-      "forename" -> idMatchRequest.forename,
-      "surname" -> idMatchRequest.surname,
+      "forename"    -> idMatchRequest.forename,
+      "surname"     -> idMatchRequest.surname,
       "dateOfBirth" -> idMatchRequest.birthDate,
-      "nino" -> idMatchRequest.nino
+      "nino"        -> idMatchRequest.nino
     )
 
     val response = Json.obj(
-      "response" -> idMatchResponse,
-      "responseMsg" -> "Match attempt.",
+      "response"          -> idMatchResponse,
+      "responseMsg"       -> "Match attempt.",
       "countOfTheAttempt" -> auditCount,
-      "isLocked" -> false
+      "isLocked"          -> false
     )
 
     audit(
@@ -73,25 +71,24 @@ class AuditService @Inject()(auditConnector: AuditConnector)(implicit ec: Execut
     )
   }
 
-  def auditIdentityMatched(idMatchRequest: IdMatchRequest,
-                           count: Int,
-                           idMatchResponse: String
-                          )(implicit hc: HeaderCarrier): Unit = {
+  def auditIdentityMatched(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(implicit
+    hc: HeaderCarrier
+  ): Unit = {
 
     val auditCount = count + 1
 
     val request = Json.obj(
-      "forename" -> idMatchRequest.forename,
-      "surname" -> idMatchRequest.surname,
+      "forename"    -> idMatchRequest.forename,
+      "surname"     -> idMatchRequest.surname,
       "dateOfBirth" -> idMatchRequest.birthDate,
-      "nino" -> idMatchRequest.nino
+      "nino"        -> idMatchRequest.nino
     )
 
     val response = Json.obj(
-      "response" -> idMatchResponse,
-      "responseMsg" -> "Matched.",
+      "response"          -> idMatchResponse,
+      "responseMsg"       -> "Matched.",
       "countOfTheAttempt" -> auditCount,
-      "isLocked" -> false
+      "isLocked"          -> false
     )
 
     audit(
@@ -102,25 +99,24 @@ class AuditService @Inject()(auditConnector: AuditConnector)(implicit ec: Execut
     )
   }
 
-  def auditIdentityMatchExceeded(idMatchRequest: IdMatchRequest,
-                                 count: Int,
-                                 idMatchResponse: String
-                                )(implicit hc: HeaderCarrier): Unit = {
+  def auditIdentityMatchExceeded(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(implicit
+    hc: HeaderCarrier
+  ): Unit = {
 
     val auditCount = count + 1
 
     val request = Json.obj(
-      "forename" -> idMatchRequest.forename,
-      "surname" -> idMatchRequest.surname,
+      "forename"    -> idMatchRequest.forename,
+      "surname"     -> idMatchRequest.surname,
       "dateOfBirth" -> idMatchRequest.birthDate,
-      "nino" -> idMatchRequest.nino
+      "nino"        -> idMatchRequest.nino
     )
 
     val response = Json.obj(
-      "response" -> idMatchResponse,
-      "responseMsg" -> "Max attempts exceeded.",
+      "response"          -> idMatchResponse,
+      "responseMsg"       -> "Max attempts exceeded.",
       "countOfTheAttempt" -> auditCount,
-      "isLocked" -> true
+      "isLocked"          -> true
     )
 
     audit(
@@ -131,25 +127,24 @@ class AuditService @Inject()(auditConnector: AuditConnector)(implicit ec: Execut
     )
   }
 
-  def auditIdentityMatchApiError(idMatchRequest: IdMatchRequest,
-                                 count: Int,
-                                 idMatchResponse: String
-                               )(implicit hc: HeaderCarrier): Unit = {
+  def auditIdentityMatchApiError(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(implicit
+    hc: HeaderCarrier
+  ): Unit = {
 
     val auditCount = count + 1
 
     val request = Json.obj(
-      "forename" -> idMatchRequest.forename,
-      "surname" -> idMatchRequest.surname,
+      "forename"    -> idMatchRequest.forename,
+      "surname"     -> idMatchRequest.surname,
       "dateOfBirth" -> idMatchRequest.birthDate,
-      "nino" -> idMatchRequest.nino
+      "nino"        -> idMatchRequest.nino
     )
 
     val response = Json.obj(
-      "response" -> idMatchResponse,
-      "responseMsg" -> "Identity match api error.",
+      "response"          -> idMatchResponse,
+      "responseMsg"       -> "Identity match api error.",
       "countOfTheAttempt" -> auditCount,
-      "isLocked" -> false
+      "isLocked"          -> false
     )
 
     audit(
@@ -162,4 +157,5 @@ class AuditService @Inject()(auditConnector: AuditConnector)(implicit ec: Execut
 
   def auditOutboundCall[T](request: T)(implicit hc: HeaderCarrier, writes: OWrites[T]): Unit =
     auditConnector.sendExplicitAudit[T](TrustAuditing.LEAD_TRUSTEE_IDENTITY_MATCH_OUTBOUND_REQUEST, request)
+
 }

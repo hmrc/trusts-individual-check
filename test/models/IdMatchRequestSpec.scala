@@ -20,28 +20,26 @@ import org.scalatest.matchers.must.{Matchers => MustMatchers}
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsValue, Json}
 
-class IdMatchRequestSpec extends AnyWordSpec with MustMatchers{
+class IdMatchRequestSpec extends AnyWordSpec with MustMatchers {
 
-  private val exampleJson:String = """{"id":"ID","nino":"AB123456A","surname":"Bloggs","forename":"Joe","birthDate":"2000-02-29"}"""
+  private val exampleJson: String =
+    """{"id":"ID","nino":"AB123456A","surname":"Bloggs","forename":"Joe","birthDate":"2000-02-29"}"""
 
-  private val exampleObj:IdMatchRequest = IdMatchRequest(
-    id = "ID",
-    nino = "AB123456A",
-    surname = "Bloggs",
-    forename = "Joe",
-    birthDate = "2000-02-29")
+  private val exampleObj: IdMatchRequest =
+    IdMatchRequest(id = "ID", nino = "AB123456A", surname = "Bloggs", forename = "Joe", birthDate = "2000-02-29")
 
   "exampleRequest" should {
 
     "read correctly" in {
       val json = Json.parse(exampleJson)
-      val obj = Json.fromJson[IdMatchRequest](json).get
+      val obj  = Json.fromJson[IdMatchRequest](json).get
       obj.mustBe(exampleObj)
     }
 
     "write correctly" in {
-      val json:JsValue = Json.toJson(exampleObj)
+      val json: JsValue = Json.toJson(exampleObj)
       Json.stringify(json).mustBe(exampleJson)
     }
   }
+
 }

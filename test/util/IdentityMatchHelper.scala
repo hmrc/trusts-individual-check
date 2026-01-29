@@ -29,4 +29,3 @@ trait IdentityMatchHelper {
   val genericIdMatchRequest: IdMatchRequest = IdMatchRequest(idString, "AB123456A", "Bob", "Dog", "2000-01-01")
 
 }
-

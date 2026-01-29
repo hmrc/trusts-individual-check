@@ -32,29 +32,31 @@ import java.util.UUID
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class IdentityMatchConnector @Inject()(
-                                        http: HttpClientV2,
-                                        auditService: AuditService,
-                                        appConfig: AppConfig
-                                      )(implicit ec: ExecutionContext) extends Logging {
+class IdentityMatchConnector @Inject() (
+  http: HttpClientV2,
+  auditService: AuditService,
+  appConfig: AppConfig
+)(implicit ec: ExecutionContext)
+    extends Logging {
 
   private val postUrl = appConfig.idMatchEndpoint
 
   private val ENVIRONMENT_HEADER = "Environment"
   private val CORRELATION_HEADER = "CorrelationId"
-  private val CONTENT_TYPE = "Content-Type"
-  private val CONTENT_TYPE_JSON = "application/json; charset=utf-8"
+  private val CONTENT_TYPE       = "Content-Type"
+  private val CONTENT_TYPE_JSON  = "application/json; charset=utf-8"
 
-  private def headers(correlationId : String) : Seq[(String, String)] =
+  private def headers(correlationId: String): Seq[(String, String)] =
     Seq(
       HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.idMatchToken}",
-      CONTENT_TYPE -> CONTENT_TYPE_JSON,
-      ENVIRONMENT_HEADER -> appConfig.idMatchEnv,
-      CORRELATION_HEADER -> correlationId
+      CONTENT_TYPE              -> CONTENT_TYPE_JSON,
+      ENVIRONMENT_HEADER        -> appConfig.idMatchEnv,
+      CORRELATION_HEADER        -> correlationId
     )
 
-  def matchId(nino: String, surname: String, forename: String, birthDate: String)
-             (implicit hc: HeaderCarrier): Future[IdMatchApiResponse] = {
+  def matchId(nino: String, surname: String, forename: String, birthDate: String)(implicit
+    hc: HeaderCarrier
+  ): Future[IdMatchApiResponse] = {
 
     val request = IdMatchApiRequest(nino, surname, forename, birthDate)
 
@@ -66,14 +68,18 @@ class IdentityMatchConnector @Inject()(
     Json.toJson(request).validate[IdMatchApiRequest] match {
       case JsSuccess(validRequest, _) =>
 
-        http.post(url"$postUrl")
+        http
+          .post(url"$postUrl")
           .setHeader(headers(correlationId): _*)
           .withBody(Json.toJson(validRequest))
           .execute[IdMatchApiResponse]
 
       case JsError(errors) =>
-        logger.error(s"[Session ID: ${Session.id(hc)}] Unable to transform request for IFS due to ${JsError.toJson(errors)} for correlationId: $correlationId")
+        logger.error(
+          s"[Session ID: ${Session.id(hc)}] Unable to transform request for IFS due to ${JsError.toJson(errors)} for correlationId: $correlationId"
+        )
         throw new InvalidIdMatchRequest("Could not validate the request")
     }
   }
+
 }

@@ -30,8 +30,8 @@ class IndividualCheckRepositorySpec extends AnyFreeSpec with MustMatchers with M
 
   lazy val createApplication: Application = new GuiceApplicationBuilder()
     .configure(
-      "mongodb.uri" -> mongoUri,
-      "metrics.enabled" -> false,
+      "mongodb.uri"      -> mongoUri,
+      "metrics.enabled"  -> false,
       "auditing.enabled" -> false
     )
     .build()
@@ -94,7 +94,6 @@ class IndividualCheckRepositorySpec extends AnyFreeSpec with MustMatchers with M
       await(repository.incrementCounter("id1"))
       await(repository.getCounter("id1")) mustEqual 2
 
-
       await(repository.incrementCounter("id2"))
       await(repository.getCounter("id2")) mustEqual 1
     }
@@ -119,4 +118,5 @@ class IndividualCheckRepositorySpec extends AnyFreeSpec with MustMatchers with M
     }
 
   }
+
 }

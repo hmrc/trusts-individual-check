@@ -29,11 +29,11 @@ object IdMatchRequest {
     import play.api.libs.json._
 
     (
-      ( __ \ "id").read[String] and
-      ( __ \ "nino").read[String](NinoReads) and
-      (__ \ "surname").read[String](SurnameReads) and
-      (__ \ "forename").read[String](ForenameReads) and
-      (__ \ "birthDate").read[String](DateReads)
+      (__ \ "id").read[String] and
+        (__ \ "nino").read[String](NinoReads) and
+        (__ \ "surname").read[String](SurnameReads) and
+        (__ \ "forename").read[String](ForenameReads) and
+        (__ \ "birthDate").read[String](DateReads)
     )(IdMatchRequest.apply _)
   }
 
@@ -42,13 +42,12 @@ object IdMatchRequest {
     import play.api.libs.functional.syntax._
 
     (
-      ( __ \ "id").write[String] and
-      ( __ \ "nino").write[String] and
-      (__ \ "surname").write[String] and
-      (__ \ "forename").write[String] and
-      (__ \ "birthDate").write[String]
+      (__ \ "id").write[String] and
+        (__ \ "nino").write[String] and
+        (__ \ "surname").write[String] and
+        (__ \ "forename").write[String] and
+        (__ \ "birthDate").write[String]
     )(unlift(IdMatchRequest.unapply))
   }
 
 }
-

@@ -37,18 +37,23 @@ import uk.gov.hmrc.mongo.test.MongoSupport
 
 import scala.concurrent.Future
 
-class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
-  with Matchers
-  with GuiceOneAppPerSuite
-  with ScalaFutures
-  with MongoSupport
-  with DefaultAwaitTimeout
-  with WireMockSupport
-  with IntegrationPatience
-  with EitherValues {
+class IdentityMatchConnectorSpec
+    extends AnyWordSpec
+    with BaseSuite
+    with Matchers
+    with GuiceOneAppPerSuite
+    with ScalaFutures
+    with MongoSupport
+    with DefaultAwaitTimeout
+    with WireMockSupport
+    with IntegrationPatience
+    with EitherValues {
 
-
-  def createMockForIndividualMatchUrlWithHeaders(returnStatus: Int, responseBody: String, individualsMatchUrl: String = "/individuals/match"): StubMapping =
+  def createMockForIndividualMatchUrlWithHeaders(
+    returnStatus: Int,
+    responseBody: String,
+    individualsMatchUrl: String = "/individuals/match"
+  ): StubMapping =
     wireMockServer.stubFor(
       post(urlEqualTo(individualsMatchUrl))
         .withHeader(CONTENT_TYPE, containing("application/json"))
@@ -63,9 +68,9 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
   private def applicationBuilder(): GuiceApplicationBuilder = new GuiceApplicationBuilder()
     .configure(
       "microservice.services.individual-match.port" -> wireMockServer.port(),
-      "mongodb.uri" -> mongoUri,
-      "metrics.enabled" -> false,
-      "auditing.enabled" -> false
+      "mongodb.uri"                                 -> mongoUri,
+      "metrics.enabled"                             -> false,
+      "auditing.enabled"                            -> false
     )
 
   private lazy val application = applicationBuilder().build()
@@ -74,14 +79,16 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
 
   private def identityMatchConnector = application.injector.instanceOf[IdentityMatchConnector]
 
-  private def getMatchIdResponse(request: IdMatchRequest, connector: IdentityMatchConnector): Future[IdMatchApiResponse] = {
+  private def getMatchIdResponse(
+    request: IdMatchRequest,
+    connector: IdentityMatchConnector
+  ): Future[IdMatchApiResponse] =
     connector.matchId(
       request.nino,
       request.surname,
       request.forename,
       request.birthDate
     )
-  }
 
   "Identity Match Connector" should {
 
@@ -131,12 +138,14 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
             IdMatchApiRequest(nino = "INVALID", forename = "Name", surname = "Name", birthDate = "2000-01-01")
 
           val caught = intercept[InvalidIdMatchRequest] {
-            identityMatchConnector.matchId(
-              requestWithInvalidNino.nino,
-              requestWithInvalidNino.surname,
-              requestWithInvalidNino.forename,
-              requestWithInvalidNino.birthDate
-            ).futureValue
+            identityMatchConnector
+              .matchId(
+                requestWithInvalidNino.nino,
+                requestWithInvalidNino.surname,
+                requestWithInvalidNino.forename,
+                requestWithInvalidNino.birthDate
+              )
+              .futureValue
           }
 
           caught.getMessage mustBe "Could not validate the request"
@@ -144,4 +153,5 @@ class IdentityMatchConnectorSpec extends AnyWordSpec with BaseSuite
       }
     }
   }
+
 }

@@ -26,14 +26,14 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 
 @Singleton()
-class CounterController @Inject()(service: IdentityMatchService,
-                                  cc: ControllerComponents
-                                 )(implicit ec: ExecutionContext) extends BackendController(cc) {
+class CounterController @Inject() (service: IdentityMatchService, cc: ControllerComponents)(implicit
+  ec: ExecutionContext
+) extends BackendController(cc) {
 
   def clearCounter(id: String): Action[AnyContent] = Action { implicit request =>
     val futureResult = service.clearCounter(id).map {
       case OperationSucceeded => NoContent
-      case OperationFailed => InternalServerError
+      case OperationFailed    => InternalServerError
     }
 
     Await.result(futureResult, 30.seconds)

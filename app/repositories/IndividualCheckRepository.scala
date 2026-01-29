@@ -32,57 +32,55 @@ import scala.concurrent.{ExecutionContext, Future}
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-class IndividualCheckRepository @Inject()(mongo: MongoComponent, config: Configuration)(implicit ec: ExecutionContext)
-  extends PlayMongoRepository[IndividualCheckCount] (
-    collectionName = "individual-check-counters",
-    mongoComponent = mongo,
-    domainFormat = IndividualCheckCount.format,
-    indexes = Seq(
-      IndexModel(
-        Indexes.ascending("lastUpdated"),
-        IndexOptions()
-          .name("last-updated-index")
-          .expireAfter(config.get[Int]("mongodb.ttl"), TimeUnit.SECONDS)
-          .unique(false)
-      ),
-      IndexModel(
-        Indexes.ascending("id"),
-        IndexOptions()
-          .name("id-index")
-          .unique(true)
+class IndividualCheckRepository @Inject() (mongo: MongoComponent, config: Configuration)(implicit ec: ExecutionContext)
+    extends PlayMongoRepository[IndividualCheckCount](
+      collectionName = "individual-check-counters",
+      mongoComponent = mongo,
+      domainFormat = IndividualCheckCount.format,
+      indexes = Seq(
+        IndexModel(
+          Indexes.ascending("lastUpdated"),
+          IndexOptions()
+            .name("last-updated-index")
+            .expireAfter(config.get[Int]("mongodb.ttl"), TimeUnit.SECONDS)
+            .unique(false)
+        ),
+        IndexModel(
+          Indexes.ascending("id"),
+          IndexOptions()
+            .name("id-index")
+            .unique(true)
+        )
       )
-    )
-  ){
+    ) {
 
   def getCounter(id: String): Future[Int] = {
     val selector = equal("id", id)
-    val res = collection.find(selector).first().toFutureOption()
+    val res      = collection.find(selector).first().toFutureOption()
 
     res.map {
       case Some(value) => value.attempts
-      case None => 0
+      case None        => 0
     }
   }
 
-  def clearCounter(id: String): Future[BinaryResult] = {
+  def clearCounter(id: String): Future[BinaryResult] =
     collection.deleteOne(equal("id", id)).head().map(_ => OperationSucceeded)
-  }
 
-  def incrementCounter(id: String): Future[BinaryResult] = {
+  def incrementCounter(id: String): Future[BinaryResult] =
     getCounter(id).flatMap(counter => setCounter(id, counter + 1))
-  }
 
   def setCounter(id: String, attempts: Int): Future[BinaryResult] = {
-    val selector = equal("id", id)
-    val currentTime = toJson(LocalDateTime.now)(MongoDateTimeFormats.localDateTimeWrite)
-    val modifier = combine(set("attempts", toBson(attempts)), set("lastUpdated", toBson(currentTime)))
+    val selector      = equal("id", id)
+    val currentTime   = toJson(LocalDateTime.now)(MongoDateTimeFormats.localDateTimeWrite)
+    val modifier      = combine(set("attempts", toBson(attempts)), set("lastUpdated", toBson(currentTime)))
     val updateOptions = new FindOneAndUpdateOptions().upsert(true)
 
     val res = collection.findOneAndUpdate(selector, modifier, updateOptions).toFutureOption()
 
     res.flatMap {
       case Some(_) => Future.successful(OperationSucceeded)
-      case None => Future.successful(OperationFailed)
+      case None    => Future.successful(OperationFailed)
     }
   }
 

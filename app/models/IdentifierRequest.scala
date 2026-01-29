@@ -20,4 +20,4 @@ import play.api.mvc.{Request, WrappedRequest}
 import uk.gov.hmrc.auth.core.AffinityGroup
 
 case class IdentifierRequest[A](request: Request[A], identifier: String, affinityGroup: AffinityGroup)
-  extends WrappedRequest[A](request)
+    extends WrappedRequest[A](request)

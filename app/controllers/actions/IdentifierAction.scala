@@ -32,30 +32,32 @@ import utils.Session
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthenticatedIdentifierAction @Inject()(override val authConnector: AuthConnector,
-                                              val parser: BodyParsers.Default)
-                                             (implicit val executionContext: ExecutionContext) extends IdentifierAction with AuthorisedFunctions with Logging {
+class AuthenticatedIdentifierAction @Inject() (
+  override val authConnector: AuthConnector,
+  val parser: BodyParsers.Default
+)(implicit val executionContext: ExecutionContext)
+    extends IdentifierAction with AuthorisedFunctions with Logging {
 
-  def invokeBlock[A](request: Request[A],
-                     block: IdentifierRequest[A] => Future[Result]): Future[Result] = {
+  def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] = {
 
     val retrievals = Retrievals.internalId and
-                     Retrievals.affinityGroup
+      Retrievals.affinityGroup
 
-    implicit val hc : HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
+    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
 
     authorised().retrieve(retrievals) {
-      case Some(internalId) ~ Some(Agent) =>
+      case Some(internalId) ~ Some(Agent)        =>
         block(IdentifierRequest(request, internalId, Agent))
       case Some(internalId) ~ Some(Organisation) =>
         block(IdentifierRequest(request, internalId, Organisation))
-      case _ =>
+      case _                                     =>
         logger.info(s"[Session ID: ${Session.id(hc)}] Insufficient enrolment")
-        Future.successful(Unauthorized(Json.toJson(ErrorResponse("UNAUTHORISED", "Insufficient enrolment for authorised user."))))
-    } recoverWith {
-      case e : AuthorisationException =>
-        logger.info(s"[Session ID: ${Session.id(hc)}] AuthorisationException: $e")
-        Future.successful(Unauthorized)
+        Future.successful(
+          Unauthorized(Json.toJson(ErrorResponse("UNAUTHORISED", "Insufficient enrolment for authorised user.")))
+        )
+    } recoverWith { case e: AuthorisationException =>
+      logger.info(s"[Session ID: ${Session.id(hc)}] AuthorisationException: $e")
+      Future.successful(Unauthorized)
     }
   }
 

@@ -29,30 +29,33 @@ import utils.Session
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
-                                     val repository: IndividualCheckRepository,
-                                     auditService: AuditService,
-                                     val appConfig: AppConfig) extends Logging {
+class IdentityMatchService @Inject() (
+  val connector: IdentityMatchConnector,
+  val repository: IndividualCheckRepository,
+  auditService: AuditService,
+  val appConfig: AppConfig
+) extends Logging {
 
-  def matchId(request: IdMatchRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] = {
+  def matchId(
+    request: IdMatchRequest
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] =
 
-    limitedMatch(request).recoverWith {
-      case _: InvalidIdMatchRequest =>
-        logger.warn(s"[Session ID: ${Session.id(hc)}] unable to send request, failed validation")
-        Future.successful(Left(DownstreamServerError))
+    limitedMatch(request).recoverWith { case _: InvalidIdMatchRequest =>
+      logger.warn(s"[Session ID: ${Session.id(hc)}] unable to send request, failed validation")
+      Future.successful(Left(DownstreamServerError))
     }
-  }
 
   def clearCounter(id: String)(implicit hc: HeaderCarrier): Future[BinaryResult] = {
     logger.info(s"[Session ID: ${Session.id(hc)}] Lock cleared")
     repository.clearCounter(id)
   }
 
-  def getCounter(id: String): Future[Int] = {
+  def getCounter(id: String): Future[Int] =
     repository.getCounter(id)
-  }
 
-  private def limitedMatch(request: IdMatchRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] = {
+  private def limitedMatch(
+    request: IdMatchRequest
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] =
 
     getCounter(request.id) flatMap { count =>
       if (count >= appConfig.maxIdAttempts) {
@@ -65,17 +68,17 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
             auditResultAndUpdateCounter(matched, request, count) map { _ =>
               Right(IdMatchResponse(id = request.id, idMatch = matched))
             }
-          case errorResponse: IdMatchApiError =>
+          case errorResponse: IdMatchApiError     =>
             auditErrorAndUpdateCounter(errorResponse, request, count) map { _ =>
               Left(errorResponse)
             }
         }
       }
     }
-  }
 
-  private def auditResultAndUpdateCounter(matched: Boolean, request: IdMatchRequest, count: Int)
-                                         (implicit hc: HeaderCarrier): Future[BinaryResult] = {
+  private def auditResultAndUpdateCounter(matched: Boolean, request: IdMatchRequest, count: Int)(implicit
+    hc: HeaderCarrier
+  ): Future[BinaryResult] =
     if (matched) {
       logger.info(s"[Session ID: ${Session.id(hc)}] Matched. Resetting counter.")
       auditService.auditIdentityMatched(request, count, "Match")
@@ -85,10 +88,10 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
       auditService.auditIdentityMatchAttempt(request, count, "NotMatched")
       repository.incrementCounter(request.id)
     }
-  }
 
-  private def auditErrorAndUpdateCounter(errorResponse: IdMatchApiError, request: IdMatchRequest, count: Int)
-                                        (implicit hc: HeaderCarrier): Future[BinaryResult] = {
+  private def auditErrorAndUpdateCounter(errorResponse: IdMatchApiError, request: IdMatchRequest, count: Int)(implicit
+    hc: HeaderCarrier
+  ): Future[BinaryResult] = {
 
     auditService.auditIdentityMatchApiError(request, count, errorResponse.toString)
 
@@ -96,8 +99,9 @@ class IdentityMatchService @Inject()(val connector: IdentityMatchConnector,
       case NinoNotFound =>
         logger.info(s"[Session ID: ${Session.id(hc)}] NINO not found. Increasing counter.")
         repository.incrementCounter(request.id)
-      case _ =>
+      case _            =>
         Future.successful(OperationSucceeded)
     }
   }
+
 }

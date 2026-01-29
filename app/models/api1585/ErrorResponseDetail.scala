@@ -25,6 +25,3 @@ object ErrorResponseDetail {
   implicit lazy val format: Format[ErrorResponseDetail] = Json.format[ErrorResponseDetail]
 
 }
-
-
-
