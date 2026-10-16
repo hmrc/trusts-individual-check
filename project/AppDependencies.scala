@@ -17,8 +17,8 @@ import sbt.*
 
 object AppDependencies {
 
-  private val playBootstrapVersion = "10.7.0"
-  private val mongoVersion         = "2.12.0"
+  private val playBootstrapVersion = "10.8.0"
+  private val mongoVersion         = "2.14.0"
 
   private val compile = Seq(
     play.sbt.PlayImport.ws,
