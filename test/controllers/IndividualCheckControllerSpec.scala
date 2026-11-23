@@ -149,14 +149,14 @@ class IndividualCheckControllerSpec
             | ]
             |}""".stripMargin))
       }
-      
+
       "return an internal server error with downstream reason when API sends 400" in {
 
         val downstreamReason = "Invalid individual details"
 
         val downstreamResponse = Json.obj(
           "failures" -> Json.obj(
-            "code" -> "INVALID_REQUEST",
+            "code"   -> "INVALID_REQUEST",
             "reason" -> downstreamReason
           )
         )
