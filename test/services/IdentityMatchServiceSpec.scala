@@ -19,7 +19,7 @@ package services
 import exceptions.LimitException
 import models.api1585.{IdMatchApiError, NinoNotFound}
 import models.{IdMatchResponse, OperationSucceeded}
-import org.mockito.ArgumentMatchers.{any, eq => mockEq}
+import org.mockito.ArgumentMatchers.{any, eq as mockEq}
 import org.mockito.Mockito.{reset, times, verify, when}
 import play.api.http.Status.{NOT_FOUND, OK}
 import play.api.libs.json.{JsValue, Json}
@@ -54,8 +54,8 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
           matched = true
         )
 
-        verify(mockAuditService, times(1)).auditOutboundCall(any())(any(), any())
-        verify(mockAuditService).auditIdentityMatched(any(), any(), mockEq("Match"))(any())
+        verify(mockAuditService, times(1)).auditOutboundCall(any())(using any(), any())
+        verify(mockAuditService).auditIdentityMatched(any(), any(), mockEq("Match"))(using any())
       }
 
       "nino is not found" in {
@@ -78,8 +78,8 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
           error = NinoNotFound
         )
 
-        verify(mockAuditService, times(1)).auditOutboundCall(any())(any(), any())
-        verify(mockAuditService).auditIdentityMatchApiError(any(), any(), any())(any())
+        verify(mockAuditService, times(1)).auditOutboundCall(any())(using any(), any())
+        verify(mockAuditService).auditIdentityMatchApiError(any(), any(), any())(using any())
       }
 
       "maximum number of attempts is reached" in {
@@ -89,7 +89,7 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
         intercept[LimitException] {
           await(identityMatchService.matchId(genericIdMatchRequest))
 
-          verify(mockAuditService).auditIdentityMatchExceeded(any(), any(), any())(any())
+          verify(mockAuditService).auditIdentityMatchExceeded(any(), any(), any())(using any())
         }
       }
     }
@@ -105,8 +105,8 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
           matched = false
         )
 
-        verify(mockAuditService, times(1)).auditOutboundCall(any())(any(), any())
-        verify(mockAuditService).auditIdentityMatchAttempt(any(), any(), mockEq("NotMatched"))(any())
+        verify(mockAuditService, times(1)).auditOutboundCall(any())(using any(), any())
+        verify(mockAuditService).auditIdentityMatchAttempt(any(), any(), mockEq("NotMatched"))(using any())
         verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
       }
 
@@ -119,8 +119,8 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
           error = NinoNotFound
         )
 
-        verify(mockAuditService, times(1)).auditOutboundCall(any())(any(), any())
-        verify(mockAuditService).auditIdentityMatchApiError(any(), any(), any())(any())
+        verify(mockAuditService, times(1)).auditOutboundCall(any())(using any(), any())
+        verify(mockAuditService).auditIdentityMatchApiError(any(), any(), any())(using any())
         verify(mockIndividualCheckRepository, times(1)).incrementCounter(mockEq(idString))
       }
 
@@ -149,7 +149,7 @@ class IdentityMatchServiceSpec extends BaseSpec with IdentityMatchHelper with Fu
         )
 
         verify(mockIndividualCheckRepository, times(1)).clearCounter(mockEq(idString))
-        verify(mockAuditService, times(3)).auditOutboundCall(any())(any(), any())
+        verify(mockAuditService, times(3)).auditOutboundCall(any())(using any(), any())
       }
 
     }

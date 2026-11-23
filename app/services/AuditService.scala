@@ -25,9 +25,9 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 
-class AuditService @Inject() (auditConnector: AuditConnector)(implicit ec: ExecutionContext) {
+class AuditService @Inject() (auditConnector: AuditConnector)(using ec: ExecutionContext) {
 
-  private def audit(event: String, request: JsValue, internalId: String, response: JsValue)(implicit
+  private def audit(event: String, request: JsValue, internalId: String, response: JsValue)(using
     hc: HeaderCarrier
   ): Unit = {
 
@@ -43,7 +43,7 @@ class AuditService @Inject() (auditConnector: AuditConnector)(implicit ec: Execu
     )
   }
 
-  def auditIdentityMatchAttempt(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(implicit
+  def auditIdentityMatchAttempt(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(using
     hc: HeaderCarrier
   ): Unit = {
 
@@ -71,7 +71,7 @@ class AuditService @Inject() (auditConnector: AuditConnector)(implicit ec: Execu
     )
   }
 
-  def auditIdentityMatched(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(implicit
+  def auditIdentityMatched(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(using
     hc: HeaderCarrier
   ): Unit = {
 
@@ -99,7 +99,7 @@ class AuditService @Inject() (auditConnector: AuditConnector)(implicit ec: Execu
     )
   }
 
-  def auditIdentityMatchExceeded(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(implicit
+  def auditIdentityMatchExceeded(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(using
     hc: HeaderCarrier
   ): Unit = {
 
@@ -127,7 +127,7 @@ class AuditService @Inject() (auditConnector: AuditConnector)(implicit ec: Execu
     )
   }
 
-  def auditIdentityMatchApiError(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(implicit
+  def auditIdentityMatchApiError(idMatchRequest: IdMatchRequest, count: Int, idMatchResponse: String)(using
     hc: HeaderCarrier
   ): Unit = {
 
@@ -155,7 +155,7 @@ class AuditService @Inject() (auditConnector: AuditConnector)(implicit ec: Execu
     )
   }
 
-  def auditOutboundCall[T](request: T)(implicit hc: HeaderCarrier, writes: OWrites[T]): Unit =
+  def auditOutboundCall[T](request: T)(using hc: HeaderCarrier, writes: OWrites[T]): Unit =
     auditConnector.sendExplicitAudit[T](TrustAuditing.LEAD_TRUSTEE_IDENTITY_MATCH_OUTBOUND_REQUEST, request)
 
 }

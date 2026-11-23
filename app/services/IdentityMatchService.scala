@@ -38,14 +38,14 @@ class IdentityMatchService @Inject() (
 
   def matchId(
     request: IdMatchRequest
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] =
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] =
 
     limitedMatch(request).recoverWith { case _: InvalidIdMatchRequest =>
       logger.warn(s"[Session ID: ${Session.id(hc)}] unable to send request, failed validation")
       Future.successful(Left(DownstreamServerError))
     }
 
-  def clearCounter(id: String)(implicit hc: HeaderCarrier): Future[BinaryResult] = {
+  def clearCounter(id: String)(using hc: HeaderCarrier): Future[BinaryResult] = {
     logger.info(s"[Session ID: ${Session.id(hc)}] Lock cleared")
     repository.clearCounter(id)
   }
@@ -55,7 +55,7 @@ class IdentityMatchService @Inject() (
 
   private def limitedMatch(
     request: IdMatchRequest
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] =
+  )(using hc: HeaderCarrier, ec: ExecutionContext): Future[Either[IdMatchApiError, IdMatchResponse]] =
 
     getCounter(request.id) flatMap { count =>
       if (count >= appConfig.maxIdAttempts) {
@@ -76,7 +76,7 @@ class IdentityMatchService @Inject() (
       }
     }
 
-  private def auditResultAndUpdateCounter(matched: Boolean, request: IdMatchRequest, count: Int)(implicit
+  private def auditResultAndUpdateCounter(matched: Boolean, request: IdMatchRequest, count: Int)(using
     hc: HeaderCarrier
   ): Future[BinaryResult] =
     if (matched) {
@@ -89,7 +89,7 @@ class IdentityMatchService @Inject() (
       repository.incrementCounter(request.id)
     }
 
-  private def auditErrorAndUpdateCounter(errorResponse: IdMatchApiError, request: IdMatchRequest, count: Int)(implicit
+  private def auditErrorAndUpdateCounter(errorResponse: IdMatchApiError, request: IdMatchRequest, count: Int)(using
     hc: HeaderCarrier
   ): Future[BinaryResult] = {
 

@@ -17,10 +17,11 @@
 package repositories
 
 import models.{IndividualCheckCount, OperationSucceeded}
+import org.mongodb.scala.SingleObservableFuture
 import org.mongodb.scala.bson.BsonDocument
-import org.scalatest._
+import org.scalatest.*
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.{Matchers => MustMatchers}
+import org.scalatest.matchers.must.Matchers as MustMatchers
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.{await, defaultAwaitTimeout}

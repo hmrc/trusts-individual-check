@@ -22,6 +22,6 @@ final case class IdMatchResponse(id: String, idMatch: Boolean)
 
 object IdMatchResponse {
 
-  implicit val format: Format[IdMatchResponse] = Json.format[IdMatchResponse]
+  given format: Format[IdMatchResponse] = Json.format[IdMatchResponse]
 
 }

@@ -21,5 +21,5 @@ import play.api.libs.json.{Format, JsValue, Json}
 case class GetTrustAuditEvent(request: JsValue, internalId: String, response: JsValue)
 
 object GetTrustAuditEvent {
-  implicit val formats: Format[GetTrustAuditEvent] = Json.format[GetTrustAuditEvent]
+  given formats: Format[GetTrustAuditEvent] = Json.format[GetTrustAuditEvent]
 }

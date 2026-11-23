@@ -16,36 +16,43 @@
 
 package models.api1585
 
-import models.Validation._
+import models.Validation.*
 import play.api.libs.json.{OWrites, Reads, __}
 
 final case class IdMatchApiRequest(nino: String, surname: String, forename: String, birthDate: String)
 
 object IdMatchApiRequest {
 
-  implicit lazy val reads: Reads[IdMatchApiRequest] = {
+  given reads: Reads[IdMatchApiRequest] = {
 
-    import play.api.libs.functional.syntax._
-    import play.api.libs.json._
+    import play.api.libs.functional.syntax.*
+    import play.api.libs.json.*
 
     (
-      (__ \ "nino").read[String](NinoReads) and
-        (__ \ "surname").read[String](SurnameReads) and
-        (__ \ "forename").read[String](ForenameReads) and
-        (__ \ "birthDate").read[String](DateReads)
-    )(IdMatchApiRequest.apply _)
+      (__ \ "nino").read[String](using NinoReads) and
+        (__ \ "surname").read[String](using SurnameReads) and
+        (__ \ "forename").read[String](using ForenameReads) and
+        (__ \ "birthDate").read[String](using DateReads)
+    )(IdMatchApiRequest.apply)
   }
 
-  implicit lazy val writes: OWrites[IdMatchApiRequest] = {
+  given writes: OWrites[IdMatchApiRequest] = {
 
-    import play.api.libs.functional.syntax._
+    import play.api.libs.functional.syntax.*
 
     (
       (__ \ "nino").write[String] and
         (__ \ "surname").write[String] and
         (__ \ "forename").write[String] and
         (__ \ "birthDate").write[String]
-    )(unlift(IdMatchApiRequest.unapply))
+    ) { idMatchRequest =>
+      (
+        idMatchRequest.nino,
+        idMatchRequest.surname,
+        idMatchRequest.forename,
+        idMatchRequest.birthDate
+      )
+    }
   }
 
 }

@@ -16,6 +16,7 @@
 
 package util
 
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import controllers.actions.{FakeIdentifierAction, IdentifierAction}
 import org.scalatest.concurrent.ScalaFutures
@@ -24,17 +25,16 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
-import play.api.inject.{Injector, bind}
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.inject.{Injector, bind}
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import repositories.IndividualCheckRepository
 import services.AuditService
 import uk.gov.hmrc.auth.core.AffinityGroup.Organisation
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, containing, post, urlEqualTo}
 
 import scala.concurrent.ExecutionContext
 
@@ -46,9 +46,9 @@ class BaseSpec
     with GuiceOneServerPerSuite
     with WireMockSupport {
 
-  lazy val injector: Injector            = app.injector
-  implicit lazy val hc: HeaderCarrier    = HeaderCarrier()
-  implicit lazy val ec: ExecutionContext = injector.instanceOf[ExecutionContext]
+  lazy val injector: Injector = app.injector
+  given hc: HeaderCarrier     = HeaderCarrier()
+  given ec: ExecutionContext  = injector.instanceOf[ExecutionContext]
 
   private val bodyParsers = stubControllerComponents().parsers.defaultBodyParser
 

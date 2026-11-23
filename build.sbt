@@ -1,9 +1,10 @@
-import uk.gov.hmrc.DefaultBuildSettings.itSettings
+import uk.gov.hmrc.DefaultBuildSettings.{itSettings, targetJvm}
 
 val appName = "trusts-individual-check"
 
-ThisBuild / scalaVersion := "2.13.18"
-ThisBuild / majorVersion := 0
+ThisBuild / scalaVersion := "3.9.0"
+ThisBuild / majorVersion := 1
+ThisBuild / targetJvm := "jvm-21"
 
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)

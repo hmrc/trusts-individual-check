@@ -18,15 +18,16 @@ package controllers
 
 import controllers.actions.IdentifierAction
 import exceptions.{InvalidIdMatchRequest, LimitException}
-import models.api1585._
+import models.api1585.*
 import models.{IdMatchError, IdMatchRequest, IdMatchResponse}
 import play.api.Logging
-import play.api.libs.json._
-import play.api.mvc.{Action, AnyContent, ControllerComponents, Request, Result}
+import play.api.libs.json.*
+import play.api.mvc.*
 import services.IdentityMatchService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.Session
+
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,7 +36,7 @@ class IndividualCheckController @Inject() (
   service: IdentityMatchService,
   cc: ControllerComponents,
   identify: IdentifierAction
-)(implicit ec: ExecutionContext)
+)(using ec: ExecutionContext)
     extends BackendController(cc) with Logging {
 
   def individualCheck(): Action[JsValue] = identify.async(parse.json) { implicit request =>
@@ -47,7 +48,7 @@ class IndividualCheckController @Inject() (
     }
   }
 
-  private def validateRequest(request: Request[JsValue])(implicit hc: HeaderCarrier): IdMatchRequest =
+  private def validateRequest(request: Request[JsValue])(using hc: HeaderCarrier): IdMatchRequest =
     request.body.validate[IdMatchRequest] match {
       case JsSuccess(idRequest, _) => idRequest
       case JsError(errors)         =>

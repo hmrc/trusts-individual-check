@@ -20,10 +20,10 @@ import com.google.inject.Inject
 import models.{ErrorResponse, IdentifierRequest}
 import play.api.Logging
 import play.api.libs.json.Json
-import play.api.mvc.Results._
-import play.api.mvc._
+import play.api.mvc.*
+import play.api.mvc.Results.*
+import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.auth.core.AffinityGroup.{Agent, Organisation}
-import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.http.HeaderCarrier
@@ -35,15 +35,17 @@ import scala.concurrent.{ExecutionContext, Future}
 class AuthenticatedIdentifierAction @Inject() (
   override val authConnector: AuthConnector,
   val parser: BodyParsers.Default
-)(implicit val executionContext: ExecutionContext)
+)(using ec: ExecutionContext)
     extends IdentifierAction with AuthorisedFunctions with Logging {
+
+  override protected def executionContext: ExecutionContext = ec
 
   def invokeBlock[A](request: Request[A], block: IdentifierRequest[A] => Future[Result]): Future[Result] = {
 
     val retrievals = Retrievals.internalId and
       Retrievals.affinityGroup
 
-    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
+    given hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
 
     authorised().retrieve(retrievals) {
       case Some(internalId) ~ Some(Agent)        =>

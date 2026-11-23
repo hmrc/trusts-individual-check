@@ -22,6 +22,6 @@ final case class ErrorResponseDetail(code: String, reason: String)
 
 object ErrorResponseDetail {
 
-  implicit lazy val format: Format[ErrorResponseDetail] = Json.format[ErrorResponseDetail]
+  given format: Format[ErrorResponseDetail] = Json.format[ErrorResponseDetail]
 
 }

@@ -16,10 +16,10 @@
 
 package models
 
-import play.api.libs.json._
+import play.api.libs.json.*
 
 case class IndividualCheckCount(id: String, attempts: Int)
 
 object IndividualCheckCount {
-  implicit val format: OFormat[IndividualCheckCount] = Json.format[IndividualCheckCount]
+  given format: OFormat[IndividualCheckCount] = Json.format[IndividualCheckCount]
 }
