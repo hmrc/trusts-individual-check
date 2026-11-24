@@ -16,10 +16,10 @@
 
 package repositories
 
-import models._
+import models.*
+import org.mongodb.scala.model.*
 import org.mongodb.scala.model.Filters.equal
 import org.mongodb.scala.model.Updates.{combine, set}
-import org.mongodb.scala.model._
 import play.api.Configuration
 import play.api.libs.json.Json.toJson
 import uk.gov.hmrc.mongo.MongoComponent
@@ -28,11 +28,11 @@ import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
-import scala.concurrent.{ExecutionContext, Future}
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class IndividualCheckRepository @Inject() (mongo: MongoComponent, config: Configuration)(implicit ec: ExecutionContext)
+class IndividualCheckRepository @Inject() (mongo: MongoComponent, config: Configuration)(using ec: ExecutionContext)
     extends PlayMongoRepository[IndividualCheckCount](
       collectionName = "individual-check-counters",
       mongoComponent = mongo,
@@ -42,7 +42,7 @@ class IndividualCheckRepository @Inject() (mongo: MongoComponent, config: Config
           Indexes.ascending("lastUpdated"),
           IndexOptions()
             .name("last-updated-index")
-            .expireAfter(config.get[Int]("mongodb.ttl"), TimeUnit.SECONDS)
+            .expireAfter(config.get[Long]("mongodb.ttl"), TimeUnit.SECONDS)
             .unique(false)
         ),
         IndexModel(
@@ -72,7 +72,7 @@ class IndividualCheckRepository @Inject() (mongo: MongoComponent, config: Config
 
   def setCounter(id: String, attempts: Int): Future[BinaryResult] = {
     val selector      = equal("id", id)
-    val currentTime   = toJson(LocalDateTime.now)(MongoDateTimeFormats.localDateTimeWrite)
+    val currentTime   = toJson(LocalDateTime.now)(using MongoDateTimeFormats.localDateTimeWrite)
     val modifier      = combine(set("attempts", toBson(attempts)), set("lastUpdated", toBson(currentTime)))
     val updateOptions = new FindOneAndUpdateOptions().upsert(true)
 

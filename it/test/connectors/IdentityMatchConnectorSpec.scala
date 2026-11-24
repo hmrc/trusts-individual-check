@@ -16,17 +16,17 @@
 
 package connectors
 
-import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import exceptions.InvalidIdMatchRequest
 import models.IdMatchRequest
-import models.api1585._
+import models.api1585.*
 import org.scalatest.EitherValues
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.http.Status._
+import play.api.http.Status.*
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.DefaultAwaitTimeout
 import play.api.test.Helpers.CONTENT_TYPE
@@ -75,7 +75,7 @@ class IdentityMatchConnectorSpec
 
   private lazy val application = applicationBuilder().build()
 
-  implicit lazy val headerCarrier: HeaderCarrier = HeaderCarrier()
+  given headerCarrier: HeaderCarrier = HeaderCarrier()
 
   private def identityMatchConnector = application.injector.instanceOf[IdentityMatchConnector]
 

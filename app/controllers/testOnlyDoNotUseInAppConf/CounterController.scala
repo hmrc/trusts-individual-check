@@ -16,8 +16,8 @@
 
 package controllers.testOnlyDoNotUseInAppConf
 
-import models._
-import play.api.mvc._
+import models.*
+import play.api.mvc.*
 import services.IdentityMatchService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -26,9 +26,8 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 
 @Singleton()
-class CounterController @Inject() (service: IdentityMatchService, cc: ControllerComponents)(implicit
-  ec: ExecutionContext
-) extends BackendController(cc) {
+class CounterController @Inject() (service: IdentityMatchService, cc: ControllerComponents)(using ec: ExecutionContext)
+    extends BackendController(cc) {
 
   def clearCounter(id: String): Action[AnyContent] = Action { implicit request =>
     val futureResult = service.clearCounter(id).map {

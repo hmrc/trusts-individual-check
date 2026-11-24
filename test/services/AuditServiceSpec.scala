@@ -18,7 +18,7 @@ package services
 
 import models.IdMatchRequest
 import models.auditing.GetTrustAuditEvent
-import org.mockito.ArgumentMatchers.{any, eq => equalTo}
+import org.mockito.ArgumentMatchers.{any, eq as equalTo}
 import org.mockito.Mockito.verify
 import play.api.libs.json.Json
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -72,7 +72,7 @@ class AuditServiceSpec extends BaseSpec {
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
         equalTo("LeadTrusteeIdentityMatched"),
         equalTo(expectedAuditData)
-      )(any(), any(), any())
+      )(using any(), any(), any())
 
     }
 
@@ -114,7 +114,7 @@ class AuditServiceSpec extends BaseSpec {
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
         equalTo("LeadTrusteeIdentityMatchAttempt"),
         equalTo(expectedAuditData)
-      )(any(), any(), any())
+      )(using any(), any(), any())
 
     }
 
@@ -160,7 +160,7 @@ class AuditServiceSpec extends BaseSpec {
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
         equalTo("LeadTrusteeIdentityMatchAttemptExceeded"),
         equalTo(expectedAuditData)
-      )(any(), any(), any())
+      )(using any(), any(), any())
 
     }
 
@@ -202,7 +202,7 @@ class AuditServiceSpec extends BaseSpec {
       verify(connector).sendExplicitAudit[GetTrustAuditEvent](
         equalTo("LeadTrusteeIdentityMatchApiError"),
         equalTo(expectedAuditData)
-      )(any(), any(), any())
+      )(using any(), any(), any())
     }
   }
 

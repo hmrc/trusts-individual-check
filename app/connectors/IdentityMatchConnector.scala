@@ -23,9 +23,10 @@ import models.api1585.{IdMatchApiRequest, IdMatchApiResponse}
 import play.api.Logging
 import play.api.http.HeaderNames
 import play.api.libs.json.{JsError, JsSuccess, Json}
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.AuditService
-import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 import utils.Session
 
 import java.util.UUID
@@ -36,7 +37,7 @@ class IdentityMatchConnector @Inject() (
   http: HttpClientV2,
   auditService: AuditService,
   appConfig: AppConfig
-)(implicit ec: ExecutionContext)
+)(using ec: ExecutionContext)
     extends Logging {
 
   private val postUrl = appConfig.idMatchEndpoint
@@ -54,7 +55,7 @@ class IdentityMatchConnector @Inject() (
       CORRELATION_HEADER        -> correlationId
     )
 
-  def matchId(nino: String, surname: String, forename: String, birthDate: String)(implicit
+  def matchId(nino: String, surname: String, forename: String, birthDate: String)(using
     hc: HeaderCarrier
   ): Future[IdMatchApiResponse] = {
 
@@ -70,7 +71,7 @@ class IdentityMatchConnector @Inject() (
 
         http
           .post(url"$postUrl")
-          .setHeader(headers(correlationId): _*)
+          .setHeader(headers(correlationId)*)
           .withBody(Json.toJson(validRequest))
           .execute[IdMatchApiResponse]
 

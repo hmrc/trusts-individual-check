@@ -16,7 +16,7 @@
 
 package models
 
-import org.scalatest.matchers.must.{Matchers => MustMatchers}
+import org.scalatest.matchers.must.Matchers as MustMatchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsValue, Json}
 

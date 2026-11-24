@@ -16,7 +16,7 @@
 
 package models.api1585
 
-import play.api.http.Status._
+import play.api.http.Status.*
 import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.http.{HttpReads, HttpResponse}
 
@@ -31,12 +31,12 @@ case object DownstreamServiceUnavailable extends IdMatchApiError
 
 object IdMatchApiResponseSuccess {
 
-  implicit lazy val format: Format[IdMatchApiResponseSuccess] = Json.format[IdMatchApiResponseSuccess]
+  given format: Format[IdMatchApiResponseSuccess] = Json.format[IdMatchApiResponseSuccess]
 }
 
 object IdMatchApiHttpReads {
 
-  implicit lazy val httpReads: HttpReads[IdMatchApiResponse] = (_: String, _: String, response: HttpResponse) =>
+  given httpReads: HttpReads[IdMatchApiResponse] = (_: String, _: String, response: HttpResponse) =>
     response.status match {
       case OK                    => response.json.as[IdMatchApiResponseSuccess]
       case BAD_REQUEST           =>

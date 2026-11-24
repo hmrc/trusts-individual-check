@@ -21,7 +21,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import play.api.http.Status.OK
 import play.api.libs.json.Json
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import play.api.test.{DefaultAwaitTimeout, FakeRequest, FutureAwaits}
 import util.{BaseSpec, IdentityMatchHelper}
 
@@ -148,6 +148,37 @@ class IndividualCheckControllerSpec
             |   "Individual check - retry limit reached (3)"
             | ]
             |}""".stripMargin))
+      }
+
+      "return an internal server error with downstream reason when API sends 400" in {
+
+        val downstreamReason = "Invalid individual details"
+
+        val downstreamResponse = Json.obj(
+          "failures" -> Json.obj(
+            "code"   -> "INVALID_REQUEST",
+            "reason" -> downstreamReason
+          )
+        )
+
+        createMockForIndividualMatchUrl(BAD_REQUEST, downstreamResponse)
+
+        when(mockIndividualCheckRepository.getCounter(any()))
+          .thenReturn(Future.successful(0))
+
+        val request =
+          FakeRequest(
+            POST,
+            routes.IndividualCheckController.individualCheck().url
+          ).withJsonBody(Json.toJson(genericIdMatchRequest))
+
+        val result = route(application, request).get
+
+        status(result) mustBe INTERNAL_SERVER_ERROR
+
+        contentAsJson(result) mustBe Json.obj(
+          "errors" -> Json.arr(downstreamReason)
+        )
       }
 
       ".failedAttempts" should {
